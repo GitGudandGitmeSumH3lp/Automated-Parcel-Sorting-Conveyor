@@ -1,23 +1,43 @@
 # Automated Parcel Sorting Conveyor
 
-### A Raspberry Pi-powered system that uses OCR, a robotic arm, and an automated transfer switch to autonomously sort packages.
-
-![Project GIF]([Link to your GIF here])
+A Raspberry Pi-powered system with a full-featured web dashboard for monitoring and control. The system uses OCR, a robotic arm, and an automated transfer switch to autonomously sort packages. 
 
 ---
 
+## 🖥️ The Web Dashboard: System Control Center
+
+To provide a user-friendly way to manage the sorter, I developed a complete web interface using Flask. This dashboard serves as the central hub for real-time monitoring, hardware diagnostics, and system testing.
+
+![Main Dashboard]([PASTE THE URL FOR dashboard-main.png HERE])
+
+---
 ## 🚀 Project Overview
 
-This project is a low-cost, scalable solution for automating parcel sorting, designed for small-to-medium logistics operations. The system uses **Optical Character Recognition (OCR)** to read labels on a conveyor belt and a **5-axis robotic arm** to sort packages into different bins. To ensure continuous operation, it features a **solar-assisted Automatic Transfer Switch (ATS)** for power resilience.
-
-### ✨ Key Features
-
-*   **🤖 Robotic Arm Sorting:** Precisely moves packages from the conveyor to designated sorting areas.
-*   **👁️ Computer Vision (OCR):** A webcam scans parcel labels, and Tesseract OCR software extracts the destination text.
-*   **⚡ Smart Power Management:** An Automatic Transfer Switch (ATS) seamlessly switches between the main grid and a solar-powered battery backup, ensuring 24/7 uptime.
-*   **⚙️ Centralized Control:** A **Raspberry Pi 5** serves as the brain of the operation, coordinating the camera, conveyor, and robotic arm.
+This project is a low-cost, scalable solution for automating parcel sorting, designed for small-to-medium logistics operations. It addresses key industry challenges like manual sorting errors and power instability by integrating **Optical Character Recognition (OCR)**, **Robotic Automation**, and a **Solar-Assisted Power System**.
 
 ---
+
+## 🔧 A Visual Deep-Dive into the System
+
+### 1. Software Logic & Flow
+
+The system's operational logic is designed for efficiency and error handling. The flowchart below illustrates the decision-making process, from parcel detection to final sorting and potential rerouting.
+
+![Software Flowchart](/assets/hardware/Softwareflowchart.jpg)
+
+### 2. OCR in Action: The Vision System
+
+The core of the identification process is the OCR system. It captures an image of a parcel's label, preprocesses it to enhance readability, and uses Tesseract OCR to extract the destination text. This simulation demonstrates the accuracy of the text extraction.
+
+![OCR Simulation](/assets/documentation/OCR.png)
+
+### 3. Hardware & System Architecture
+
+The hardware is integrated into a cohesive system controlled by a Raspberry Pi. The schematic diagram shows the power and data connections between all major components, while the framework diagram illustrates the flow of data from input (sensors) to output (robotic arm).
+
+| System Schematic | Conceptual Framework (IPO) |
+| :---: | :---: |
+| ![Hardware Schematic](/assets/hardware/PictureSchematic.png) | ![System Framework](/assets/hardware/image_2025-10-16_192404940.png) 
 
 ---
 
@@ -26,17 +46,16 @@ This project is a low-cost, scalable solution for automating parcel sorting, des
 | Category          | Technologies Used                                                              |
 | ----------------- | ------------------------------------------------------------------------------ |
 | **Software**      | `Python`, `Flask`, `OpenCV`, `Tesseract OCR`, `Raspberry Pi OS`                  |
-| **Hardware**      | `Raspberry Pi 5`, `MG995 Servo Motors`, `PCA9685 Driver`, `ESP32 Cam / Webcam`   |
+| **Hardware**      | `Raspberry Pi 5`, `MG995 Servo Motors`, `PCA99685 Driver`, `ESP32 Cam / Webcam`  |
 | **Power System**  | `Automatic Transfer Switch (ATS)`, `Solar Panels`, `PWM Charge Controller`       |
 
----
+## 👥 The Project Team
 
-## 🔧 How It Works
+This project was a collaborative effort by the following Computer Engineering students at Bestlink College of the Philippines. My role was to lead the team and spearhead the software development.
 
-1.  A parcel is placed on the conveyor belt.
-2.  As it passes under the camera, an image of the label is captured.
-3.  The Raspberry Pi processes the image, using OCR to determine the parcel's destination.
-4.  The Pi calculates the parcel's position and commands the robotic arm to intercept it.
-5.  The robotic arm picks up the parcel and places it in the correct sorting bin.
-
----
+*   Anave, Feliza C.
+*   Delgado, Christian C.
+*   Delgado, John Josua B.
+*   De Leon, Eunice Joy M.
+*   Inocencio, Christian Angelo B.
+*   Veriña, Carlo
