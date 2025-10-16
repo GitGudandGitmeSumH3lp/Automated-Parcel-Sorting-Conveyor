@@ -8,9 +8,17 @@ A Raspberry Pi-powered system with a full-featured web dashboard for monitoring 
 
 To provide a user-friendly way to manage the sorter, I developed a complete web interface using Flask. This dashboard serves as the central hub for real-time monitoring, hardware diagnostics, and system testing.
 
-![Main Dashboard](/assets/documentation/dashboard.png)
+| Dashboard Main Page | Real-Time Camera Stream |
+| :---: | :---: |
+| ![Main Dashboard](/assets/documentation/dashboard.png) | ![Cam Finder](/assets/documentation/camfinder.png) |
+| ![Main Dashboard](/assets/documentation/dashboard1.png) |
+| *The main dashboard provides a high-level overview of the system's status and recent activity.* | *Live video from the sorter's camera can be viewed directly in the browser.* |
 
-![Main Dashboard](/assets/documentation/dashboard1.png)
+### Parcel Label Generator
+
+To streamline the testing of the OCR and sorting logic, I built a parcel label generator. This tool creates realistic, scannable labels with randomized destination data, removing the need for physical parcels during software validation.
+
+![Parcel Generator](/assets/documentation/parcelgen.png)
 
 
 ---
@@ -32,7 +40,7 @@ The system's operational logic is designed for efficiency and error handling. Th
 
 The core of the identification process is the OCR system. It captures an image of a parcel's label, preprocesses it to enhance readability, and uses Tesseract OCR to extract the destination text. This simulation demonstrates the accuracy of the text extraction.
 
-![OCR Simulation](/assets/documentation/OCR.png)
+![OCR Simulation](/assets/documentation/ocr.png)
 
 ### 3. Hardware & System Architecture
 
