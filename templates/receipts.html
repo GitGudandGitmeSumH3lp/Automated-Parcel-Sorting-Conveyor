@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SORT IT - Receipts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --spotify-black: #121212;
+            --spotify-green: #1DB954;
+            --spotify-dark-grey: #282828;
+            --spotify-grey: #535353;
+            --text-white: #FFFFFF;
+            --text-light-grey: #B3B3B3;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--spotify-black);
+            color: var(--text-white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background-color: var(--spotify-dark-grey);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--spotify-green);
+            text-decoration: none;
+        }
+
+        .navbar-links {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-links a {
+            color: var(--text-light-grey);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-size: 1rem;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .navbar-links a:hover {
+            color: var(--text-white);
+        }
+
+         .github-icon {
+            /* Inline SVG styles */
+            fill: var(--text-light-grey); /* Icon color */
+            width: 24px; /* Icon size */
+            height: 24px;
+            transition: fill 0.2s ease-in-out;
+            vertical-align: middle; /* Align with text if any */
+        }
+
+        .github-icon:hover {
+            fill: var(--text-white); /* Change color on hover */
+        }
+
+        .logout-link {
+            color: var(--text-light-grey);
+            text-decoration: none;
+            margin-left: 1.5rem;
+            font-size: 1rem;
+            padding: 0.5rem 1rem; /* Add some padding to make it look like a button */
+            border: 1px solid var(--spotify-grey); /* Subtle border */
+            border-radius: 20px; /* Rounded corners */
+            transition: all 0.2s ease-in-out;
+        }
+
+        .logout-link:hover {
+            color: var(--text-white);
+            background-color: var(--spotify-dark-grey); /* Darker background on hover */
+            border-color: var(--text-white); /* White border on hover */
+        }
+
+        .container {
+            flex-grow: 1;
+            padding: 2rem;
+            max-width: 1200px; /* Limit content width for better readability */
+            margin: 0 auto; /* Center the container */
+        }
+
+        h1 {
+            color: var(--spotify-green);
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        .search-panel {
+            background-color: var(--spotify-dark-grey);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem; /* Space between search elements */
+            align-items: center;
+        }
+
+        .search-panel input[type="text"] {
+            flex-grow: 1; /* Allow input to take up available space */
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--spotify-grey);
+            border-radius: 4px;
+            background-color: var(--spotify-black);
+            color: var(--text-white);
+            font-size: 1rem;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .search-panel input[type="text"]:focus {
+            outline: none;
+            border-color: var(--spotify-green);
+            box-shadow: 0 0 5px rgba(29, 185, 84, 0.5);
+        }
+
+         .search-panel button {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--spotify-green);
+            color: var(--text-white);
+            border: none;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+
+        .search-panel button:hover {
+            background-color: #1ed760; /* Lighter green on hover */
+        }
+
+         .search-panel button:active {
+            transform: scale(0.98);
+        }
+
+
+        .receipts-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid for receipts */
+            gap: 1.5rem; /* Space between receipt cards */
+        }
+
+        .receipt-card {
+            background-color: var(--spotify-dark-grey);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .receipt-card:hover {
+             transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .receipt-image-container {
+            width: 100%;
+            max-height: 300px; /* Limit image height */
+            overflow: hidden;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            background-color: var(--spotify-black); /* Placeholder background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .receipt-image-container img {
+            display: block;
+            max-width: 100%;
+            max-height: 300px;
+            height: auto;
+            object-fit: contain; /* Ensure image fits without distortion */
+        }
+
+        .receipt-details h3 {
+            font-size: 1.1rem;
+            color: var(--spotify-green);
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.25rem;
+        }
+
+        .receipt-details p {
+            font-size: 0.9rem;
+            color: var(--text-light-grey);
+            margin-bottom: 0.5rem;
+            word-break: break-word; /* Prevent long text overflow */
+        }
+
+        .receipt-details strong {
+            color: var(--text-white);
+        }
+
+        .no-results {
+            text-align: center;
+            color: var(--text-light-grey);
+            font-size: 1.2rem;
+            margin-top: 2rem;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            .navbar-brand {
+                margin-bottom: 1rem;
+            }
+            .navbar-links {
+                margin-top: 0.5rem;
+            }
+            .navbar-links a {
+                margin-left: 1rem;
+                margin-right: 1rem;
+            }
+             .container {
+                padding: 1rem;
+            }
+            .search-panel {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+             .search-panel input[type="text"],
+             .search-panel button {
+                width: 100%;
+             }
+             .receipts-list {
+                grid-template-columns: 1fr; /* Stack cards on small screens */
+             }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="{{ url_for('dashboard') }}" class="navbar-brand">SORT IT</a>
+        <div class="navbar-links">
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+             <a href="https://github.com/GitGudandGitmeSumH3lp/image_processing_system" target="_blank" title="View on GitHub">
+                <svg class="github-icon" aria-hidden="true" viewBox="0 0 24 24">
+                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.84 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-2.168-1.397.169-1.372.169-1.372 2.034.145 3.102 2.098 3.102 2.098 1.804 3.07 4.73 2.185 5.874 1.67.18-.81.703-1.61 1.342-1.977-4.517-.512-9.245-2.258-9.245-10.03 0-2.227.79-4.03 2.08-5.444-.205-.512-.9-2.562.195-5.326 0 0 1.35-.545 4.415 2.095 1.283-.357 2.643-.536 4.005-.542 1.36.006 2.72.185 4.003.542 3.066-2.64 4.418-2.095 4.418-2.095 1.09 2.764.396 4.814.197 5.326 1.29 1.414 2.078 3.217 2.078 5.444 0 7.78-4.736 9.517-9.26 10.02-.71.61-.84 1.29-.84 2.6v3.958c0 .32.217.695.825.57C20.565 22.092 24 17.555 24 12.297c0-6.627-5.373-12-12-12z"/>
+                </svg>
+            </a>
+            <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Uploaded Receipts</h1>
+
+        <div class="search-panel">
+            <input type="text" id="search-input" placeholder="Search by Zip Code, Courier, or Text...">
+            <button id="search-button">Search</button>
+        </div>
+
+        <div id="receipts-list" class="receipts-list">
+            <div class="no-results">Loading receipts...</div>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const receiptsListDiv = document.getElementById('receipts-list');
+
+        // Function to fetch and display receipts
+        async function fetchReceipts(query = '') {
+            receiptsListDiv.innerHTML = '<div class="no-results">Loading receipts...</div>'; // Show loading state
+
+            try {
+                // Make an AJAX request to the Flask API endpoint
+                const response = await fetch(`/api/search_receipts?query=${encodeURIComponent(query)}`);
+
+                if (!response.ok) {
+                    // Handle HTTP errors (e.g., 401 Unauthorized, 500 Internal Server Error)
+                    const errorText = await response.text(); // Get error message from server
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+
+                const receipts = await response.json(); // Assuming the API returns JSON
+
+                receiptsListDiv.innerHTML = ''; // Clear loading state
+
+                if (receipts.length === 0) {
+                    receiptsListDiv.innerHTML = '<div class="no-results">No receipts found.</div>';
+                } else {
+                    // Iterate through the results and create HTML for each receipt
+                    receipts.forEach(receipt => {
+                        const card = document.createElement('div');
+                        card.classList.add('receipt-card');
+
+                        // Construct image source from base64 data
+                        // Ensure receipt.original_image exists and is a string before using it
+                        const imageSrc = receipt.original_image ? `data:image/jpeg;base64,${receipt.original_image}` : ''; // Assuming JPEG, adjust if needed
+
+                        card.innerHTML = `
+                            <div class="receipt-image-container">
+                                ${imageSrc ? `<img src="${imageSrc}" alt="Parcel Receipt Image">` : '<div class="no-results">No Image Available</div>'}
+                            </div>
+                            <div class="receipt-details">
+                                <h3>Receipt ID: ${receipt.id}</h3>
+                                <p><strong>Timestamp:</strong> ${new Date(receipt.timestamp).toLocaleString()}</p>
+                                <p><strong>Zip Code(s):</strong> ${receipt.zip_codes && receipt.zip_codes.length > 0 ? receipt.zip_codes.join(', ') : 'N/A'}</p>
+                                <p><strong>Courier:</strong> ${receipt.courier_service || 'N/A'}</p>
+                                <p><strong>Extracted Text:</strong></p>
+                                <p>${receipt.raw_text || 'N/A'}</p>
+                            </div>
+                        `;
+                        receiptsListDiv.appendChild(card);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error fetching receipts:", error);
+                receiptsListDiv.innerHTML = `<div class="no-results" style="color: #e74c3c;">Error loading receipts: ${error.message}</div>`;
+            }
+        }
+
+        // Event listener for the search button
+        searchButton.addEventListener('click', () => {
+            const query = searchInput.value.trim();
+            fetchReceipts(query); // Fetch with the search query
+        });
+
+        // Optional: Allow searching on pressing Enter in the input field
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Prevent form submission if it's part of a form
+                searchButton.click(); // Trigger the button click
+            }
+        });
+
+
+        // Fetch all receipts when the page loads initially
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchReceipts();
+        });
+
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APS Camera System</title>
+    <style>
+        :root {
+            --main-bg: #0a0e14;
+            --terminal-bg: #0d1117;
+            --accent: #00ff9d;
+            --accent-alt: #00c3ff;
+            --text: #e0e0e0;
+            --grid: #112233;
+            --grid-bright: #1a3854;
+            --error: #ff355e;
+            --success: #00ff9d;
+            --warning: #ffcc00;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Courier New", monospace;
+        }
+        
+        body {
+            background-color: var(--main-bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            top: 0;
+            width: 100vw
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 10px;
+            position: relative;
+        }
+        
+        .title-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--accent);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .title {
+            color: var(--accent);
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+        }
+        
+        .title::before {
+            content: ">";
+            color: var(--accent);
+            margin-right: 10px;
+            animation: blink 1s infinite;
+        }
+        
+        .system-info {
+            font-size: 12px;
+            color: var(--accent-alt);
+            text-align: right;
+        }
+        
+        .grid-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(var(--grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.15;
+        }
+        
+        .terminal {
+            background-color: var(--terminal-bg);
+            border: 1px solid var(--accent);
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+            overflow: hidden;
+        }
+        
+        .terminal::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 25px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-alt) 100%);
+            opacity: 0.1;
+        }
+        
+        .controls {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            background-color: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 14px;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 157, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover {
+            background-color: rgba(0, 255, 157, 0.1);
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .logs {
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            background-color: rgba(10, 14, 20, 0.8);
+            font-size: 14px;
+        }
+        
+        .log {
+            margin-bottom: 5px;
+            padding-left: 10px;
+            border-left: 3px solid transparent;
+            word-break: break-word;
+        }
+        
+        .log.info {
+            border-left-color: var(--accent-alt);
+        }
+        
+        .log.success {
+            border-left-color: var(--success);
+        }
+        
+        .log.error {
+            border-left-color: var(--error);
+        }
+        
+        .log.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .timestamp {
+            color: var(--accent-alt);
+            margin-right: 10px;
+        }
+        
+        .status-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .status-panel {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid var(--accent);
+            margin-right: 10px;
+            background-color: rgba(10, 14, 20, 0.8);
+            box-shadow: 0 0 5px rgba(0, 255, 157, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .status-panel:last-child {
+            margin-right: 0;
+        }
+        
+        .status-title {
+            font-size: 14px;
+            color: var(--accent);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .status-label {
+            flex: 1;
+            font-size: 12px;
+            color: var(--text);
+        }
+        
+        .status-value {
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            position: relative;
+        }
+        
+        .status-indicator.online {
+            background-color: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+        
+        .status-indicator.offline {
+            background-color: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+        
+        .status-indicator.scanning {
+            background-color: var(--warning);
+            box-shadow: 0 0 10px var(--warning);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .camera-cell {
+            border: 1px solid var(--accent);
+            padding: 15px;
+            position: relative;
+            background-color: rgba(10, 14, 20, 0.8);
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+        
+        .camera-cell.active {
+            border-color: var(--success);
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+        }
+        
+        .camera-cell::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-alt) 100%);
+            opacity: 0.5;
+        }
+        
+        .camera-title {
+            text-transform: uppercase;
+            font-size: 14px;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        
+        .camera-meta {
+            font-size: 12px;
+            color: var(--text);
+            margin-bottom: 5px;
+        }
+        
+        .camera-status {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .placeholder-feed {
+            margin-top: 10px;
+            width: 100%;
+            height: 80px;
+            background-color: rgba(0, 195, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .placeholder-feed.active {
+            background-color: rgba(0, 255, 157, 0.1);
+        }
+        
+        .feed-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 157, 0.1) 2px,
+                rgba(0, 255, 157, 0.1) 4px
+            );
+            animation: scanlines 10s linear infinite;
+        }
+        
+        .feed-text {
+            color: var(--accent);
+            font-size: 12px;
+            text-align: center;
+            z-index: 1;
+        }
+        
+        .conveyor-system {
+            height: 80px;
+            background-color: var(--terminal-bg);
+            border: 1px solid var(--accent);
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .conveyor-belt {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background-color: #333;
+        }
+        
+        .conveyor-markings {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 200%;
+            height: 10px;
+            background: repeating-linear-gradient(
+                90deg,
+                #333,
+                #333 20px,
+                #555 20px,
+                #555 40px
+            );
+            animation: moveConveyor 10s linear infinite;
+        }
+        
+        .conveyor-rollers {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .roller {
+            width: 10px;
+            height: 20px;
+            background-color: #666;
+        }
+        
+        .parcel {
+            position: absolute;
+            bottom: 30px;
+            width: 50px;
+            height: 30px;
+            background: linear-gradient(135deg, #555, #444);
+            border: 1px solid #666;
+            animation: moveParcel 15s linear infinite;
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            width: 2px;
+            height: 60%;
+            background-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+            animation: scanEffect 2s ease-in-out infinite;
+        }
+        
+        .ocr-status {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 12px;
+            color: var(--accent);
+        }
+        
+        .decorative-code {
+            position: absolute;
+            bottom: 5px;
+            right: 10px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        @keyframes scanlines {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(8px); }
+        }
+        
+        @keyframes moveConveyor {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        @keyframes moveParcel {
+            0% { left: -50px; }
+            100% { left: 100%; }
+        }
+        
+        @keyframes scanEffect {
+            0%, 100% { opacity: 0.5; height: 60%; }
+            50% { opacity: 0.8; height: 70%; }
+        }
+        
+        /* Small animations for decorative elements */
+        .data-stream {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .data-line {
+            position: absolute;
+            top: -100px;
+            background-color: var(--accent);
+            opacity: 0.1;
+            width: 1px;
+            height: 50px;
+            animation: dataFall linear infinite;
+        }
+        
+        @keyframes dataFall {
+            0% { transform: translateY(-100px); }
+            100% { transform: translateY(1000px); }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .status-section {
+                flex-direction: column;
+            }
+            
+            .status-panel {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            
+            .camera-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-background"></div>
+    <div class="data-stream" id="dataStream"></div>
+    
+    <div class="container">
+        <div class="title-area">
+            <h1 class="title">APS Camera System</h1>
+            <div class="system-info">
+                <div id="current-time">00:00:00</div>
+                <div>SYSTEM V1.0</div>
+            </div>
+        </div>
+        
+        <div class="terminal">
+            <div class="controls">
+                <button class="btn" id="btnFindCamera">Initialize Camera</button>
+                <button class="btn" id="btnClearLog">Clear Logs</button>
+            </div>
+            
+            <div class="logs" id="logContainer">
+                <div class="log info">
+                    <span class="timestamp">[00:00:00]</span>
+                    <span>Automated Parcel System initialized.</span>
+                </div>
+                <div class="log info">
+                    <span class="timestamp">[00:00:00]</span>
+                    <span>Camera subsystem ready for initialization.</span>
+                </div>
+            </div>
+            
+            <div class="status-section">
+                <div class="status-panel">
+                    <h3 class="status-title">System Status</h3>
+                    <div class="status-item">
+                        <div class="status-label">CAMERA MODULE</div>
+                        <div class="status-value">
+                            <div id="cameraDot" class="status-indicator offline"></div>
+                            <div id="cameraText">OFFLINE</div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">OCR ENGINE</div>
+                        <div class="status-value">
+                            <div id="ocrDot" class="status-indicator offline"></div>
+                            <div id="ocrText">STANDBY</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="status-panel">
+                    <h3 class="status-title">Conveyor Status</h3>
+                    <div class="status-item">
+                        <div class="status-label">MOTOR CONTROL</div>
+                        <div class="status-value">
+                            <div id="motorDot" class="status-indicator offline"></div>
+                            <div id="motorText">IDLE</div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">PACKAGE DETECTION</div>
+                        <div class="status-value">
+                            <div id="packageDot" class="status-indicator offline"></div>
+                            <div id="packageText">NO PACKAGE</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="camera-grid" id="cameraGrid">
+                <!-- Camera cells will be added here -->
+            </div>
+            
+            <div class="conveyor-system">
+                <div class="conveyor-belt"></div>
+                <div class="conveyor-markings"></div>
+                <div class="conveyor-rollers" id="conveyorRollers">
+                    <!-- Rollers will be added dynamically -->
+                </div>
+                <div class="scan-line"></div>
+                <div class="ocr-status">OCR: STANDBY</div>
+                <div class="parcel"></div>
+                <div class="decorative-code">0x84A2F1D9</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Current time updater
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        setInterval(updateTime, 1000);
+        updateTime();
+        
+        // DOM Elements
+        const btnFindCamera = document.getElementById('btnFindCamera');
+        const btnClearLog = document.getElementById('btnClearLog');
+        const logContainer = document.getElementById('logContainer');
+        const cameraGrid = document.getElementById('cameraGrid');
+        const cameraDot = document.getElementById('cameraDot');
+        const cameraText = document.getElementById('cameraText');
+        const ocrDot = document.getElementById('ocrDot');
+        const ocrText = document.getElementById('ocrText');
+        const motorDot = document.getElementById('motorDot');
+        const motorText = document.getElementById('motorText');
+        const packageDot = document.getElementById('packageDot');
+        const packageText = document.getElementById('packageText');
+        const conveyorRollers = document.getElementById('conveyorRollers');
+        const dataStream = document.getElementById('dataStream');
+        
+        // Add decorative rollers
+        for (let i = 0; i < 20; i++) {
+            const roller = document.createElement('div');
+            roller.className = 'roller';
+            conveyorRollers.appendChild(roller);
+        }
+        
+        // Add decorative data stream lines
+        for (let i = 0; i < 20; i++) {
+            const line = document.createElement('div');
+            line.className = 'data-line';
+            line.style.left = `${Math.random() * 100}%`;
+            line.style.animationDuration = `${Math.random() * 5 + 3}s`;
+            line.style.animationDelay = `${Math.random() * 5}s`;
+            dataStream.appendChild(line);
+        }
+        
+        // Add log entry function
+        function addLogEntry(message, type = 'info') {
+            const now = new Date();
+            const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `log ${type}`;
+            logEntry.innerHTML = `
+                <span class="timestamp">[${timestamp}]</span>
+                <span>${message}</span>
+            `;
+            
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Find cameras function - implements logic from camfinder.py
+        async function findCameras() {
+            cameraDot.className = 'status-indicator scanning';
+            cameraText.textContent = 'SCANNING';
+            
+            addLogEntry('Initializing camera detection protocol...', 'info');
+            addLogEntry('Searching for available camera indices...', 'info');
+            
+            // Clear existing camera grid
+            cameraGrid.innerHTML = '';
+            
+            let foundCameras = [];
+            
+            try {
+                // Try to access cameras via browser API
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length === 0) {
+                    addLogEntry('No camera devices detected on system.', 'error');
+                    cameraDot.className = 'status-indicator offline';
+                    cameraText.textContent = 'NONE FOUND';
+                } else {
+                    // Process detected cameras
+                    for (let i = 0; i < videoDevices.length; i++) {
+                        const device = videoDevices[i];
+                        addLogEntry(`Camera found at index ${i}: ${device.label || 'Camera ' + (i+1)}`, 'success');
+                        foundCameras.push({
+                            index: i,
+                            name: device.label || `Camera ${i}`
+                        });
+                        
+                        // Create camera cell
+                        createCameraCell(i, device.label || `Camera ${i}`);
+                    }
+                    
+                    cameraDot.className = 'status-indicator online';
+                    cameraText.textContent = 'ONLINE';
+                    
+                    // Activate OCR and conveyor after camera is found
+                    setTimeout(() => {
+                        ocrDot.className = 'status-indicator online';
+                        ocrText.textContent = 'READY';
+                        document.querySelector('.ocr-status').textContent = 'OCR: READY';
+                        addLogEntry('OCR engine initialized and ready.', 'success');
+                    }, 1500);
+                    
+                    setTimeout(() => {
+                        motorDot.className = 'status-indicator online';
+                        motorText.textContent = 'READY';
+                        addLogEntry('Conveyor belt system online.', 'success');
+                    }, 2500);
+                    
+                    setTimeout(() => {
+                        packageDot.className = 'status-indicator scanning';
+                        packageText.textContent = 'SCANNING';
+                        addLogEntry('Package detection system activated.', 'info');
+                    }, 3500);
+                }
+            } catch (err) {
+                // Fall back to simulation if browser API fails
+                addLogEntry(`Camera access error: ${err.message}`, 'error');
+                addLogEntry('Falling back to simulation mode...', 'warning');
+                
+                // Simulate finding cameras as in the Python script
+                for (let i = 0; i < 6; i++) {
+                    // Randomly find 1-3 cameras
+                    if (i < 3 && Math.random() > 0.4) {
+                        addLogEntry(`Camera found at index ${i}`, 'success');
+                        foundCameras.push({
+                            index: i,
+                            name: `Camera ${i}`
+                        });
+                        
+                        // Create camera cell
+                        createCameraCell(i, `Camera ${i}`);
+                    } else {
+                        addLogEntry(`No camera found at index ${i}`, 'info');
+                    }
+                }
+                
+                if (foundCameras.length > 0) {
+                    cameraDot.className = 'status-indicator online';
+                    cameraText.textContent = 'ONLINE';
+                    
+                    // Activate OCR and conveyor after camera is found
+                    setTimeout(() => {
+                        ocrDot.className = 'status-indicator online';
+                        ocrText.textContent = 'READY';
+                        document.querySelector('.ocr-status').textContent = 'OCR: READY';
+                        addLogEntry('OCR engine initialized and ready.', 'success');
+                    }, 1500);
+                    
+                    setTimeout(() => {
+                        motorDot.className = 'status-indicator online';
+                        motorText.textContent = 'READY';
+                        addLogEntry('Conveyor belt system online.', 'success');
+                    }, 2500);
+                    
+                    setTimeout(() => {
+                        packageDot.className = 'status-indicator scanning';
+                        packageText.textContent = 'SCANNING';
+                        addLogEntry('Package detection system activated.', 'info');
+                    }, 3500);
+                } else {
+                    cameraDot.className = 'status-indicator offline';
+                    cameraText.textContent = 'NONE FOUND';
+                }
+            }
+            
+            return foundCameras;
+        }
+        
+        // Create camera cell in the grid
+        function createCameraCell(index, name) {
+            const cell = document.createElement('div');
+            cell.className = 'camera-cell';
+            
+            // Randomly make one camera active
+            const isActive = index === 0 || Math.random() > 0.7;
+            if (isActive) {
+                cell.className += ' active';
+            }
+            
+            cell.innerHTML = `
+                <div class="camera-title">CAM-${index}</div>
+                <div class="camera-meta">${name}</div>
+                <div class="camera-status">
+                    <div class="status-indicator ${isActive ? 'online' : 'offline'}"></div>
+                    ${isActive ? 'ACTIVE' : 'STANDBY'}
+                </div>
+                <div class="placeholder-feed ${isActive ? 'active' : ''}">
+                    <div class="feed-lines"></div>
+                    <div class="feed-text">NO SIGNAL</div>
+                </div>
+            `;
+            
+            cameraGrid.appendChild(cell);
+            
+            // Update feed text after a delay if camera is active
+            if (isActive) {
+                setTimeout(() => {
+                    cell.querySelector('.feed-text').textContent = `FEED ACTIVE`;
+                    if (index === 0) {
+                        addLogEntry(`Camera ${index} set as primary OCR scanner.`, 'success');
+                    }
+                }, 2000);
+            }
+        }
+        
+        // Event listeners
+        btnFindCamera.addEventListener('click', () => {
+            findCameras();
+        });
+        
+        btnClearLog.addEventListener('click', () => {
+            logContainer.innerHTML = '';
+            addLogEntry('Log cleared.', 'info');
+        });
+        
+        // Initialization
+        addLogEntry('APS Terminal v1.0 ready.', 'info');
+        addLogEntry('Click "Initialize Camera" to begin OCR system setup.', 'info');
+    </script>
+</body>
+</html>

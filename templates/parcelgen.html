@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PARCELGEN | Automated Parcel System</title>
+    <style>
+        :root {
+            --terminal-bg: #0a0a0a;
+            --terminal-text: #00ff41;
+            --terminal-accent: #00bc12;
+            --terminal-secondary: #005b21;
+        }
+
+        * {
+            box-sizing: border-box;
+            scrollbar-width: thin;
+            scrollbar-color: var(--terminal-accent) var(--terminal-bg);
+        }
+
+        body {
+            background-color: var(--terminal-bg);
+            color: var(--terminal-text);
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .terminal-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .terminal-panel {
+            background-color: rgba(0,0,0,0.8);
+            border: 2px solid var(--terminal-accent);
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .terminal-header {
+            text-align: center;
+            margin-bottom: 20px;
+            animation: glitch 1s infinite alternate;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+
+        .action-button {
+            background-color: var(--terminal-bg);
+            border: 2px solid var(--terminal-accent);
+            color: var(--terminal-text);
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-button:hover {
+            background-color: var(--terminal-accent);
+            color: var(--terminal-bg);
+        }
+
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                transparent,
+                var(--terminal-text),
+                transparent
+            );
+            transform: rotate(45deg);
+            opacity: 0.1;
+        }
+
+        .action-button:hover::before {
+            animation: scan 0.5s linear infinite;
+        }
+
+        .terminal-output {
+            background-color: rgba(0,0,0,0.7);
+            border: 1px solid var(--terminal-accent);
+            min-height: 200px;
+            max-height: 300px;
+            padding: 10px;
+            margin-top: 20px;
+            overflow-y: auto;
+        }
+
+        .image-viewer {
+            background-color: rgba(0,0,0,0.7);
+            border: 1px solid var(--terminal-accent);
+            min-height: 400px;
+            max-height: 600px;
+            display: flex;
+            flex-wrap: wrap;
+            overflow-y: auto;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        .image-preview {
+            max-width: 200px;
+            max-height: 300px;
+            border: 2px solid var(--terminal-secondary);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .image-preview:hover {
+            transform: scale(1.05);
+            border-color: var(--terminal-accent);
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px var(--terminal-accent); }
+            50% { text-shadow: -2px -2px var(--terminal-accent); }
+            100% { text-shadow: 2px 2px var(--terminal-accent); }
+        }
+
+        @keyframes scan {
+            0% { transform: rotate(45deg) translateX(-100%); }
+            100% { transform: rotate(45deg) translateX(100%); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        .processing-indicator {
+            display: none;
+            text-align: center;
+            color: var(--terminal-accent);
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-panel">
+            <div class="terminal-header">
+                <h1>PARCELGEN SYSTEM</h1>
+                <p>Automated Parcel Processing Terminal</p>
+            </div>
+
+            <div class="action-grid">
+                <div class="action-button" id="initScan">
+                    INITIATE SCAN
+                </div>
+                <div class="action-button" id="processParcel">
+                    PROCESS PARCEL
+                </div>
+                <div class="action-button" id="trackParcel">
+                    TRACK PARCEL
+                </div>
+                <div class="action-button" id="systemStatus">
+                    SYSTEM STATUS
+                </div>
+                <div class="action-button" id="generateLabel">
+                    GENERATE LABEL
+                </div>
+                <div class="action-button" id="clearImages">
+                    CLEAR IMAGES
+                </div>
+            </div>
+
+            <div class="processing-indicator" id="processingIndicator">
+                PROCESSING... STAND BY
+            </div>
+
+            <div class="terminal-output" id="terminalOutput">
+                <p>>> SYSTEM READY</p>
+            </div>
+        </div>
+
+        <div class="terminal-panel">
+            <h2>OCR IMAGE VIEWER</h2>
+            <div class="image-viewer" id="imageViewer">
+                <!-- Images will be dynamically loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // backend functions
+        class ParcelSystem {
+            constructor() {
+                this.imageCache = []; // Note: this.imageCache is not currently used in the provided methods
+            }
+
+            // This is the version that communicates with the backend
+            async clearImages() {
+                const imageViewer = document.getElementById('imageViewer');
+                const processingIndicator = document.getElementById('processingIndicator');
+
+                this.updateTerminalOutput('>>> CLEARING IMAGES FROM FRONTEND AND BACKEND...');
+                processingIndicator.style.display = 'block';
+
+                try {
+                    const response = await fetch('/clear-all-images', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (response.ok && data.status.includes('success')) {
+                        this.updateTerminalOutput(`>>> BACKEND: ${data.message}`);
+                        imageViewer.innerHTML = ''; // Clear frontend viewer
+                        this.updateTerminalOutput('>>> CLEARED FRONTEND IMAGE VIEWER');
+                    } else {
+                        this.updateTerminalOutput(`>>> BACKEND CLEAR ERROR: ${data.message || 'Unknown error'}`);
+                        if(data.errors) {
+                            data.errors.forEach(err => this.updateTerminalOutput(`>>> DETAIL: ${err}`));
+                        }
+                    }
+                } catch (error) {
+                    this.updateTerminalOutput(`>>> CLEAR IMAGES ERROR: ${error.message}`);
+                } finally {
+                    processingIndicator.style.display = 'none';
+                }
+            }
+
+            // This is the version that communicates with the backend
+            async generateLabel() {
+                const processingIndicator = document.getElementById('processingIndicator');
+                this.updateTerminalOutput('>>> REQUESTING LABEL GENERATION FROM BACKEND...');
+                processingIndicator.style.display = 'block';
+
+                try {
+                    const response = await fetch('/generate-label', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'success') {
+                        this.updateTerminalOutput(`>>> BACKEND: ${data.message} (${data.file})`);
+                        this.loadImages(); // Reload images to show the new one
+                    } else {
+                        this.updateTerminalOutput(`>>> GENERATE LABEL ERROR: ${data.message || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    this.updateTerminalOutput(`>>> GENERATE LABEL ERROR: ${error.message}`);
+                } finally {
+                    processingIndicator.style.display = 'none';
+                }
+            }
+
+            async initiateScan() {
+                const processingIndicator = document.getElementById('processingIndicator');
+                this.updateTerminalOutput('>>> SCAN INITIATED. REQUESTING IMAGE SIMULATION...');
+                processingIndicator.style.display = 'block';
+                try {
+                    const response = await fetch('/simulate-scan', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'success') {
+                        this.updateTerminalOutput(`>>> BACKEND: ${data.message}`);
+                        this.loadImages();
+                    } else {
+                        this.updateTerminalOutput(`>>> SCAN SIMULATION ERROR: ${data.message || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    this.updateTerminalOutput(`>>> SCAN ERROR: ${error.message}`);
+                } finally {
+                    processingIndicator.style.display = 'none';
+                }
+            }
+
+            async processParcel() {
+                const processingIndicator = document.getElementById('processingIndicator');
+                this.updateTerminalOutput('>>> PARCEL PROCESSING STARTED. REQUESTING OCR & DATA EXTRACTION...');
+                processingIndicator.style.display = 'block';
+                try {
+                    const response = await fetch('/process-parcel', { method: 'POST' });
+                    const data = await response.json();
+
+                    if (response.ok && data.status === 'success') {
+                         this.updateTerminalOutput(`>>> BACKEND: ${data.message}`);
+                         if (data.extracted_data) { // If your backend sends extracted data
+                             this.updateTerminalOutput(`>>> EXTRACTED: ${JSON.stringify(data.extracted_data)}`);
+                         }
+                        this.loadImages(); // Potentially new images (e.g. highlighted OCR regions)
+                    } else {
+                        this.updateTerminalOutput(`>>> PROCESS ERROR: ${data.message || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    this.updateTerminalOutput(`>>> PROCESS ERROR: ${error.message}`);
+                } finally {
+                    processingIndicator.style.display = 'none';
+                }
+            }
+
+            async loadImages() {
+                const imageViewer = document.getElementById('imageViewer');
+                const processingIndicator = document.getElementById('processingIndicator');
+
+                processingIndicator.style.display = 'block';
+                imageViewer.innerHTML = ''; // Clear previous images
+
+                try {
+                    const response = await fetch('/get-images');
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const images = await response.json();
+
+                    if (Array.isArray(images)) {
+                        images.forEach(imagePath => {
+                            const img = document.createElement('img');
+                            img.src = imagePath; // Assumes imagePath is the full URL like '/images/label.png'
+                            img.alt = "Parcel Image";
+                            img.classList.add('image-preview');
+                            img.onclick = () => this.showFullImage(imagePath);
+                            imageViewer.appendChild(img);
+                        });
+                        this.updateTerminalOutput(`>>> LOADED ${images.length} IMAGES`);
+                    } else {
+                        this.updateTerminalOutput(`>>> IMAGE LOAD WARNING: Expected an array of images, but got something else.`);
+                        console.warn("Received non-array from /get-images:", images);
+                    }
+
+                } catch (error) {
+                    this.updateTerminalOutput(`>>> IMAGE LOAD ERROR: ${error.message}`);
+                    console.error("Error loading images:", error);
+                } finally {
+                    processingIndicator.style.display = 'none';
+                }
+            }
+
+            showFullImage(imagePath) {
+                const fullImageModal = document.createElement('div');
+                fullImageModal.style.position = 'fixed';
+                fullImageModal.style.top = '0';
+                fullImageModal.style.left = '0';
+                fullImageModal.style.width = '100%';
+                fullImageModal.style.height = '100%';
+                fullImageModal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                fullImageModal.style.display = 'flex';
+                fullImageModal.style.justifyContent = 'center';
+                fullImageModal.style.alignItems = 'center';
+                fullImageModal.style.zIndex = '1000';
+                fullImageModal.setAttribute('role', 'dialog');
+                fullImageModal.setAttribute('aria-modal', 'true');
+
+
+                const fullImage = document.createElement('img');
+                fullImage.src = imagePath;
+                fullImage.alt = "Full size parcel image";
+                fullImage.style.maxWidth = '90%';
+                fullImage.style.maxHeight = '90%';
+                fullImage.style.border = '3px solid var(--terminal-accent)';
+
+                fullImageModal.appendChild(fullImage);
+                document.body.appendChild(fullImageModal);
+
+                fullImageModal.onclick = () => document.body.removeChild(fullImageModal);
+            }
+
+            trackParcel() {
+                this.updateTerminalOutput('>>> TRACKING PARCEL (FUNCTIONALITY NOT FULLY IMPLEMENTED)');
+                // In a real app, this might open a new tab or fetch tracking data.
+            }
+
+            systemStatus() {
+                this.updateTerminalOutput('>>> SYSTEM DIAGNOSTICS RUNNING (SIMULATED)');
+                // Simulate checking backend status
+                fetch('/get-images') // Simple check to see if backend is responsive
+                    .then(response => {
+                        if (response.ok) {
+                            this.updateTerminalOutput('>>> BACKEND CONNECTION: OK');
+                        } else {
+                            this.updateTerminalOutput(`>>> BACKEND CONNECTION: ERROR ${response.status}`);
+                        }
+                        this.updateTerminalOutput('>>> SYSTEM STATUS: ALL SERVICES NOMINAL (SIMULATED)');
+                    })
+                    .catch(err => {
+                        this.updateTerminalOutput(`>>> BACKEND CONNECTION: FAILED - ${err.message}`);
+                        this.updateTerminalOutput('>>> SYSTEM STATUS: CRITICAL ERROR DETECTED (SIMULATED)');
+                    });
+            }
+
+            updateTerminalOutput(message) {
+                const output = document.getElementById('terminalOutput');
+                const newLine = document.createElement('p');
+                // To prevent XSS if message ever comes from untrusted source,
+                // though here it's mostly developer-set strings or backend status.
+                // For messages including HTML like `<span>`, we need to set innerHTML.
+                // Be cautious with this if messages could ever be user-generated.
+                if (message.includes('<') && message.includes('>')) {
+                    newLine.innerHTML = message;
+                } else {
+                    newLine.textContent = message;
+                }
+                output.appendChild(newLine);
+                output.scrollTop = output.scrollHeight; // Auto-scroll to bottom
+            }
+        }
+
+        // Initialize the Parcel System
+        const parcelSystem = new ParcelSystem();
+
+        // Button Event Listeners
+        document.getElementById('initScan').addEventListener('click', () => parcelSystem.initiateScan());
+        document.getElementById('processParcel').addEventListener('click', () => parcelSystem.processParcel());
+        document.getElementById('trackParcel').addEventListener('click', () => parcelSystem.trackParcel());
+        document.getElementById('systemStatus').addEventListener('click', () => parcelSystem.systemStatus());
+        document.getElementById('generateLabel').addEventListener('click', () => parcelSystem.generateLabel());
+        document.getElementById('clearImages').addEventListener('click', () => parcelSystem.clearImages());
+
+        // Initial image load
+        parcelSystem.loadImages();
+    </script>
+</body>
+</html>

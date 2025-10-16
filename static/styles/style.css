@@ -1,0 +1,102 @@
+:root {
+  /* Existing and potentially keep */
+  --primary-color: #22c55e; /* Tailwind green-500 */
+  --primary-hover: #16a34a; /* Tailwind green-600 (example) */
+  --bg-dark: #000000;       /* Tailwind black */
+  --text-white: #e5e7eb;   /* Tailwind gray-200 */
+  --text-light: #9ca3af;   /* Tailwind gray-400 */
+  --text-muted: #6b7280;   /* Tailwind gray-500 */
+  --border-radius: 0.75rem; /* Tailwind rounded-xl */ /* You have 12px, which is similar */
+
+  /* New or to be adapted */
+  --bg-card: #111827;      /* Tailwind gray-900 */
+  --border-color-light: #374151; /* Tailwind gray-800 */
+  --border-color-medium: #4b5563; /* Tailwind gray-700 */
+
+  --accent-blue: #3b82f6; /* Tailwind blue-500 */
+  --accent-red: #ef4444; /* Tailwind red-500 */
+  --accent-yellow: #f59e0b; /* Tailwind amber-500 (amber is often used instead of pure yellow) */
+  /* --accent-purple: #9b59b6; // Keep your purple or choose a Tailwind one */
+
+  /* Spacing (Tailwind uses rem, p-4 is 1rem, p-6 is 1.5rem) */
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  /* ... any other colors or variables you see commonly used ... */
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-white); /* Default text color */
+  font-family: 'Inter', sans-serif; /* Matches new design */
+  /* ... other body styles ... */
+}
+
+
+
+.right-container {
+  background-color: #181818; /* Spotify dark background */
+  color: #b3b3b3; /* Spotify light text color */
+  padding: 20px;
+  border-radius: 10px; /* Slightly rounded corners */
+  margin-top: 20px; /* Adjust as needed for spacing */
+  width: 300px; /* Adjust width as needed */
+}
+
+.search-filter .section-title {
+  color: #fff; /* White for the title */
+  font-size: 1.2em;
+  margin-bottom: 15px;
+}
+
+.search-filter .form-group {
+  margin-bottom: 20px;
+}
+
+.search-filter label {
+  display: block;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+  color: #b3b3b3;
+}
+
+.search-filter input[type="text"],
+.search-filter input[type="date"] {
+  width: calc(100% - 16px); /* Adjust for padding and border */
+  padding: 10px;
+  border: 1px solid #282828; /* Darker border */
+  border-radius: 5px;
+  background-color: #282828; /* Dark input background */
+  color: #fff;
+  font-size: 0.9em;
+}
+
+.search-filter input[type="text"]::placeholder,
+.search-filter input[type="date"]::placeholder {
+  color: #535353; /* Darker placeholder text */
+}
+
+.search-filter input[type="date"] {
+  /* You might want to style the date input specifically if needed */
+}
+
+.search-filter .search-button {
+  background-color: #1db954; /* Spotify green */
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-filter .search-button:hover {
+  background-color: #1ed760; /* Slightly brighter green on hover */
+}
+
+.navbar form {
+  display: inline-block;
+  margin: 0;
+}

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcel OCR | Terminal Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles based on the original file, adapted for Tailwind */
+        /* Using direct CSS for specific layout/component styles not easily done with utility classes */
+        :root {
+            --terminal-black: #1a1a1a; /* Darker black for background */
+            --terminal-gray: #333333; /* Medium gray for borders/separators */
+            --terminal-light-gray: #aaaaaa; /* Light gray for text */
+            --terminal-green: #00ff00; /* Bright green for prompts/success */
+            --terminal-red: #ff6666; /* Red for errors */
+            --terminal-blue: #66ccff; /* Blue for info */
+            --terminal-yellow: #ffff66; /* Yellow for warnings */
+            --terminal-white: #ffffff; /* Pure white for commands/output */
+            --terminal-font: 'Courier New', monospace; /* Monospace font for terminal feel */
+            --main-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            font-family: var(--main-font);
+            background-color: var(--terminal-black);
+            color: var(--terminal-light-gray); /* Default text color */
+            line-height: 1.6; /* Slightly increased line height for readability */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+             border-bottom-color: var(--terminal-gray);
+        }
+
+        .logo svg {
+            fill: var(--terminal-green);
+        }
+
+        .status-bar .status-item {
+            background-color: var(--terminal-gray);
+            color: var(--terminal-light-gray);
+        }
+
+        .status-bar .status-dot {
+            background-color: var(--terminal-green);
+             box-shadow: 0 0 8px var(--terminal-green);
+        }
+
+        .scanner-section, .parcel-section {
+            background-color: var(--terminal-black); /* Keep background dark */
+            border: 1px solid var(--terminal-gray); /* Add subtle border */
+        }
+
+        .scanner-section h2, .parcel-section h2 {
+            color: var(--terminal-white); /* White for headings */
+        }
+
+
+        /* Ensure camera feed container maintains aspect ratio or fixed height */
+        .camera-feed {
+            width: 100%;
+            height: 300px; /* Fixed height as in original, adjust as needed */
+            background-color: var(--terminal-gray); /* Use terminal gray for video background */
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--terminal-gray);
+        }
+
+        #videoFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the container */
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay */
+            color: var(--terminal-white);
+            font-size: 16px;
+        }
+
+        /* Action buttons styling */
+        .action-buttons .btn {
+            transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+
+        .action-buttons .btn.bg-spotify-green {
+            background-color: var(--terminal-green);
+            color: var(--terminal-black);
+        }
+
+        .action-buttons .btn.hover\\:bg-spotify-green-hover:hover {
+             background-color: rgba(0, 255, 0, 0.8); /* Slightly less bright green on hover */
+        }
+
+        .action-buttons .btn-secondary {
+            border-color: var(--terminal-light-gray);
+            color: var(--terminal-light-gray);
+        }
+
+         .action-buttons .btn-secondary:hover {
+             border-color: var(--terminal-white);
+             color: var(--terminal-white);
+             background-color: rgba(255, 255, 255, 0.1);
+         }
+
+
+        /* Loader animation */
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--terminal-gray);
+            border-bottom-color: var(--terminal-green);
+            border-radius: 50%;
+            display: inline-block;
+            animation: rotation 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+            display: none; /* Hidden by default */
+        }
+
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: var(--terminal-green);
+            color: var(--terminal-black);
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Darker shadow */
+            transform: translateX(120%); /* Start off-screen */
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+            font-weight: 500;
+             font-family: var(--main-font); /* Notifications use main font */
+        }
+
+        .notification.show {
+            transform: translateX(0); /* Slide in */
+        }
+
+        .error-notification {
+            background-color: var(--terminal-red); /* Red color for errors */
+            color: var(--terminal-white);
+        }
+
+        /* Scan Results - Terminal Output Style */
+        .scan-results {
+            height: 450px; /* Fixed height for scrollable area */
+            overflow-y: auto;
+            padding-right: 8px; /* Space for scrollbar */
+            font-family: var(--terminal-font); /* Use terminal font */
+            color: var(--terminal-light-gray); /* Default text color */
+            padding: 10px; /* Add some padding inside the results box */
+             border: 1px solid var(--terminal-gray); /* Match section border */
+             border-radius: 4px;
+        }
+
+        /* Customize scrollbar for terminal feel */
+        .scan-results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scan-results::-webkit-scrollbar-track {
+            background: var(--terminal-black); /* Match background */
+        }
+
+        .scan-results::-webkit-scrollbar-thumb {
+            background-color: var(--terminal-gray); /* Darker thumb */
+            border-radius: 4px;
+        }
+
+        /* Style for individual parcel output lines */
+        .parcel-output-block {
+            margin-bottom: 15px; /* Space between parcel outputs */
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--terminal-gray); /* Dashed line separator */
+        }
+
+         .parcel-output-block:last-child {
+             border-bottom: none; /* No border for the last item */
+             margin-bottom: 0;
+             padding-bottom: 0;
+         }
+
+
+        .output-line {
+            margin-bottom: 4px; /* Space between lines within a block */
+             word-break: break-word; /* Break long words if necessary */
+        }
+
+        .output-label {
+            color: var(--terminal-green); /* Green for labels */
+            margin-right: 8px;
+            display: inline-block;
+            min-width: 80px; /* Align labels */
+        }
+
+        .output-value {
+            color: var(--terminal-white); /* White for values */
+        }
+
+        .output-courier {
+            color: var(--terminal-blue); /* Blue for courier name */
+            font-weight: bold;
+        }
+
+         .output-timestamp {
+             color: var(--terminal-light-gray); /* Light gray for timestamp */
+             font-size: 0.9em;
+         }
+
+        .output-error {
+             color: var(--terminal-red); /* Red for errors */
+        }
+
+
+        /* Empty state styling for terminal look */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%; /* Fill container height */
+            color: var(--terminal-gray); /* Dimmed text */
+            text-align: center;
+             font-family: var(--terminal-font); /* Use terminal font */
+        }
+
+        .empty-state svg {
+            margin-bottom: 16px;
+            fill: var(--terminal-gray); /* Dimmed icon */
+            width: 40px;
+            height: 40px;
+        }
+
+        .empty-state p {
+             margin: 4px 0;
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr; /* Stack columns on smaller screens */
+            }
+
+            .action-buttons {
+                grid-template-columns: 1fr; /* Stack buttons */
+            }
+
+            .btn-full {
+                grid-column: span 1;
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-terminal-black text-terminal-white">
+    <div class="container mx-auto p-4 flex flex-col min-h-screen">
+        <header class="header flex items-center mb-6 pb-4 border-b border-terminal-gray">
+            <div class="logo flex items-center font-bold text-xl text-terminal-white mr-auto">
+                <svg width="24" height="24" viewBox="0 0 24 24" class="mr-2 fill-terminal-green">
+                    <path d="M3 4C3 3.44772 3.44772 3 4 3H20C20.5523 3 21 3.44772 21 4V16C21 16.5523 20.5523 17 20 17H4C3.44772 17 3 16.5523 3 16V4Z"/>
+                    <path d="M5 5H19V13H5V5Z" fill="white"/>
+                    <path d="M7 7H17V11H7V7Z" fill="black"/>
+                    <path d="M8 8H16V10H8V8Z" fill="white"/>
+                    <path d="M8 18H16L17 21H7L8 18Z"/>
+                    <path d="M6 14L3 19C3 19.5523 3.44772 20 4 20H20C20.5523 20 21 19.5523 21 19L18 14H6Z"/>
+                </svg>
+                <span>Parcel OCR System</span>
+            </div>
+        </header>
+
+        <main class="main-grid grid grid-cols-1 md:grid-cols-3 gap-5 flex-1">
+            <section class="scanner-section rounded-lg p-5 shadow-lg col-span-1 md:col-span-2">
+                <div class="status-bar flex flex-wrap gap-4 mb-4">
+                    <div class="status-item flex items-center px-3 py-2 rounded-full text-sm">
+                        <span class="status-dot w-2.5 h-2.5 rounded-full mr-2 bg-terminal-green shadow-md shadow-terminal-green/50"></span>
+                        <span>Camera</span>
+                    </div>
+                    <div class="status-item flex items-center px-3 py-2 rounded-full text-sm">
+                        <span class="status-dot w-2.5 h-2.5 rounded-full mr-2 bg-terminal-green shadow-md shadow-terminal-green/50"></span>
+                        <span>OCR Module</span>
+                    </div>
+                    <div class="status-item flex items-center px-3 py-2 rounded-full text-sm">
+                        <span class="status-dot w-2.5 h-2.5 rounded-full mr-2 bg-terminal-green shadow-md shadow-terminal-green/50"></span>
+                        <span>Servo Control</span>
+                    </div>
+                </div>
+
+                <h2 class="text-xl font-bold mb-4 text-terminal-white">Scanner Control</h2>
+
+                <div class="camera-feed">
+                     <img id="videoFeed" src="{{ url_for('video_feed') }}" alt="Camera Feed">
+                    {% if not camera_available %}
+                    <div class="camera-overlay" id="cameraStatus">
+                        <span>Camera not available</span>
+                    </div>
+                     {% else %}
+                     <div class="camera-overlay hidden" id="cameraStatus">
+                         <span>Initializing camera...</span>
+                     </div>
+                     {% endif %}
+                </div>
+
+                <div class="action-buttons grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                    <button id="takeSnapshotBtn" class="btn bg-spotify-green text-spotify-black rounded-full px-4 py-3 font-bold uppercase tracking-wide flex items-center justify-center hover:bg-spotify-green-hover transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="mr-2">
+                            <path d="M12 15.2C13.7673 15.2 15.2 13.7673 15.2 12C15.2 10.2327 13.7673 8.8 12 8.8C10.2327 8.8 8.8 10.2327 8.8 12C8.8 13.7673 10.2327 15.2 12 15.2Z"/>
+                            <path d="M9 2L7.17 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4H16.83L15 2H9ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z"/>
+                        </svg>
+                        Take Snapshot
+                    </button>
+                    <button id="scanImagesBtn" class="btn btn-secondary bg-transparent text-spotify-white border border-spotify-light-gray rounded-full px-4 py-3 font-bold uppercase tracking-wide flex items-center justify-center hover:border-spotify-white hover:bg-white/10 transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="mr-2">
+                            <path d="M9.5 6.5V3H14.5V6.5H9.5ZM3 8.25V21H21V8.25H3ZM14.5 16.5H9.5V10.5H14.5V16.5ZM7 10.5H4.5V13.5H7V10.5ZM7 15H4.5V18H7V15ZM19.5 10.5H17V13.5H19.5V10.5ZM19.5 15H17V18H19.5V15Z"/>
+                        </svg>
+                        Scan Images
+                    </button>
+                    <button id="runSorterBtn" class="btn btn-full col-span-1 md:col-span-2 bg-spotify-green text-spotify-black rounded-full px-4 py-3 font-bold uppercase tracking-wide flex items-center justify-center hover:bg-spotify-green-hover transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" class="mr-2">
+                                <path d="M3 14L3 19C3 20.1 3.9 21 5 21L19 21C20.1 21 21 20.1 21 19L21 14L3 14ZM7 19L5 19L5 17L7 19ZM13 5L11 5 11 3 13 3 13 5ZM15 5L15 3C15 1.9 14.1 1 13 1L11 1C9.9 1 9 1.9 9 3L9 5C7.9 5 7 5.9 7 7L7 10 17 10 17 7C17 5.9 16.1 5 15 5Z"/>
+                            </svg>
+                        Run Parcel Sorter
+                    </button>
+                </div>
+
+                <div class="flex items-center">
+                    <div id="scanningLoader" class="loader mr-2"></div>
+                    <div id="scanStatus" class="text-sm text-terminal-light-gray">System Idle</div>
+                </div>
+            </section>
+
+            <section class="parcel-section rounded-lg p-5 shadow-lg col-span-1">
+                <h2 class="text-xl font-bold mb-4 text-terminal-white">Scanned Parcels</h2>
+
+                <div class="sort-buttons flex gap-2 mb-3 flex-wrap">
+                     <button class="sort-btn active bg-terminal-gray text-terminal-white rounded px-3 py-1 text-xs font-mono cursor-pointer hover:bg-terminal-green hover:text-terminal-black transition duration-200 ease-in-out" data-sort="all">ALL</button>
+                    <button class="sort-btn bg-terminal-gray text-terminal-light-gray rounded px-3 py-1 text-xs font-mono cursor-pointer hover:bg-terminal-green hover:text-terminal-black transition duration-200 ease-in-out" data-sort="shopee">SHOPEE</button>
+                    <button class="sort-btn bg-terminal-gray text-terminal-light-gray rounded px-3 py-1 text-xs font-mono cursor-pointer hover:bg-terminal-green hover:text-terminal-black transition duration-200 ease-in-out" data-sort="lazada">LAZADA</button>
+                    <button class="sort-btn bg-terminal-gray text-terminal-light-gray rounded px-3 py-1 text-xs font-mono cursor-pointer hover:bg-terminal-green hover:text-terminal-black transition duration-200 ease-in-out" data-sort="jnt">J&T</button>
+                    <button class="sort-btn bg-terminal-gray text-terminal-light-gray rounded px-3 py-1 text-xs font-mono cursor-pointer hover:bg-terminal-green hover:text-terminal-black transition duration-200 ease-in-out" data-sort="ninjavan">NINJA VAN</button>
+                     </div>
+
+                <div class="scan-results" id="scanResults">
+                    <div class="empty-state">
+                         <svg viewBox="0 0 24 24">
+                             <path d="M20 6H10V5H8V6H4C2.9 6 2 6.9 2 8V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V8C22 6.9 21.1 6 20 6ZM20 19H4V8H20V19Z"/>
+                             <path d="M13 10H11V13H8V15H11V18H13V15H16V13H13V10Z"/>
+                         </svg>
+                        <p>NO PARCELS SCANNED YET</p>
+                        <p class="text-sm mt-2">TAKE A SNAPSHOT OR SCAN IMAGES</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="notification" class="notification">Notification message</div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get references to DOM elements
+            const takeSnapshotBtn = document.getElementById('takeSnapshotBtn');
+            const scanImagesBtn = document.getElementById('scanImagesBtn');
+            const runSorterBtn = document.getElementById('runSorterBtn');
+            const scanResults = document.getElementById('scanResults');
+            const notification = document.getElementById('notification');
+            const scanningLoader = document.getElementById('scanningLoader');
+            const scanStatus = document.getElementById('scanStatus');
+            const sortButtons = document.querySelectorAll('.sort-btn');
+             const cameraStatusOverlay = document.getElementById('cameraStatus');
+             const videoFeed = document.getElementById('videoFeed');
+
+
+            // Variable to hold the scanned parcel data received from the API
+            let scannedParcelData = [];
+
+            // Function to show notifications
+            function showNotification(message, isError = false) {
+                notification.textContent = message;
+                notification.classList.toggle('error-notification', isError);
+                notification.classList.add('show');
+
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+
+            // --- Button Click Handlers ---
+
+            // Initial State based on Flask variables (if camera is not available)
+             const cameraAvailable = {{ camera_available | tojson }}; // Assumes Flask passes this variable
+             const ocrAvailable = {{ ocr_module_available | tojson }}; // Assumes Flask passes this variable
+
+             if (cameraAvailable) {
+                 // If camera is available, maybe hide the "Camera not available" overlay
+                  if(cameraStatusOverlay) cameraStatusOverlay.classList.add('hidden');
+                  takeSnapshotBtn.disabled = false; // Enable snapshot if camera is ready (or after init)
+                  scanImagesBtn.disabled = false; // Enable scan if camera can provide images
+             } else {
+                  // If camera is not available, show the overlay
+                 if(cameraStatusOverlay) {
+                     cameraStatusOverlay.classList.remove('hidden');
+                     cameraStatusOverlay.innerHTML = '<span>CAMERA NOT AVAILABLE</span>';
+                 }
+             }
+
+            if (ocrAvailable) {
+                 scanImagesBtn.disabled = false; // Enable scan if OCR module is loaded
+                 runSorterBtn.disabled = false; // Enable sorter if OCR is available to provide data
+             } else {
+                 scanImagesBtn.disabled = true; // Disable scan if OCR module is not loaded
+                 runSorterBtn.disabled = true; // Disable sorter if OCR is not available
+                 showNotification('OCR module not loaded on the server.', true);
+             }
+
+            // Take snapshot button click handler (currently simulated front-end action, needs backend API)
+            takeSnapshotBtn.addEventListener('click', function() {
+                // TODO: Implement API call to backend to trigger snapshot
+                 showNotification('Snapshot feature not yet implemented on backend.');
+                 /*
+                scanningLoader.style.display = 'inline-block';
+                scanStatus.textContent = 'Taking snapshot...';
+
+                fetch('/api/take_snapshot', { method: 'POST' }) // Example API endpoint
+                .then(response => response.json())
+                .then(data => {
+                     scanningLoader.style.display = 'none';
+                     if(data.success) {
+                         scanStatus.textContent = 'Snapshot captured.';
+                         showNotification('Snapshot captured successfully');
+                         // After snapshot, you might trigger scan automatically
+                         // scanImagesBtn.click();
+                     } else {
+                         scanStatus.textContent = 'Snapshot failed: ' + (data.error || '');
+                         showNotification('Snapshot failed.', true);
+                     }
+                })
+                .catch(error => {
+                     scanningLoader.style.display = 'none';
+                     scanStatus.textContent = 'Error taking snapshot.';
+                     showNotification('Error taking snapshot.', true);
+                     console.error('Snapshot error:', error);
+                });
+                */
+            });
+
+            // Scan images button click handler - Calls the Flask backend API
+            scanImagesBtn.addEventListener('click', function() {
+                 // Disable buttons during scan
+                 scanImagesBtn.disabled = true;
+                 takeSnapshotBtn.disabled = true;
+                 runSorterBtn.disabled = true;
+
+
+                scanningLoader.style.display = 'inline-block';
+                scanStatus.textContent = 'SCANNING IMAGES...';
+                scanResults.innerHTML = ''; // Clear previous results
+
+                // Make a POST request to the Flask API endpoint
+                fetch('/api/trigger_ocr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                        // Add any necessary authentication headers here
+                    }
+                })
+                .then(response => {
+                    // Check if the response is OK (status code 200-299)
+                    if (!response.ok) {
+                         // Attempt to read JSON error message from the response
+                         return response.json().then(err => {
+                             // Throw an error with details from the backend if available
+                             throw new Error(err.error || `HTTP error! status: ${response.status}`);
+                         }).catch(() => {
+                             // If JSON parsing fails, throw a generic HTTP error
+                             throw new Error(`HTTP error! status: ${response.status}`);
+                         });
+                    }
+                    // Parse the JSON response
+                    return response.json();
+                })
+                .then(data => {
+                    // Handle the successful response from the API
+                    console.log('Scan API response:', data);
+
+                    scanningLoader.style.display = 'none';
+                     // Re-enable buttons
+                     scanImagesBtn.disabled = false;
+                     takeSnapshotBtn.disabled = false;
+                     runSorterBtn.disabled = false;
+
+
+                    if (data.success) {
+                        scanStatus.textContent = data.message || 'Scan completed.';
+                        showNotification(data.message || 'OCR scan completed successfully');
+
+                        // Store the received parcel data
+                        // Map the API response structure to the structure expected by renderParcelResults
+                         // Add a unique ID for each scanned item for easier filtering/sorting
+                         scannedParcelData = data.results.map((item, index) => ({
+                            id: item.filename + '_' + Date.now(), // Unique ID based on filename and timestamp
+                            filename: item.filename,
+                            // Use optional chaining (?.) to safely access nested properties
+                            courier: item.extracted_data?.courier || 'UNKNOWN COURIER',
+                            province: item.extracted_data?.province || 'UNKNOWN PROVINCE',
+                             raw_text: item.extracted_data?.raw_text || 'NO RAW TEXT', // Store raw text
+                            timestamp: new Date().toLocaleString() // Use client-side time for display
+                        }));
+
+
+                        // Render the results for the 'All' category initially
+                        renderParcelResults(scannedParcelData);
+
+                    } else {
+                        // Handle API response indicating failure
+                        scanStatus.textContent = `Scan failed: ${data.error || 'Unknown error'}`;
+                        showNotification(`Scan failed: ${data.error || 'Unknown error'}`, true);
+                        renderParcelResults([]); // Clear results or show empty state on failure
+                    }
+                })
+                .catch(error => {
+                    // Handle errors during the fetch request itself (network issues, etc.)
+                    console.error('Error calling scan API:', error);
+                    scanningLoader.style.display = 'none';
+                     // Re-enable buttons
+                     scanImagesBtn.disabled = false;
+                     takeSnapshotBtn.disabled = false;
+                     runSorterBtn.disabled = false;
+
+
+                    scanStatus.textContent = `Error during scan: ${error.message}`;
+                    showNotification(`Error during scan: ${error.message}`, true);
+                    renderParcelResults([]); // Clear results or show empty state on error
+                });
+            });
+
+            // Run sorter button click handler (currently simulated front-end action, needs backend API)
+            runSorterBtn.addEventListener('click', function() {
+                 if (scannedParcelData.length === 0) {
+                      showNotification('No scanned parcels to sort.', true);
+                      return;
+                 }
+
+                 // Disable buttons during sorting
+                 scanImagesBtn.disabled = true;
+                 takeSnapshotBtn.disabled = true;
+                 runSorterBtn.disabled = true;
+
+                 scanningLoader.style.display = 'inline-block';
+                 scanStatus.textContent = 'RUNNING PARCEL SORTER...';
+
+                // TODO: Implement API call to backend to trigger sorting
+                 showNotification('Sorter feature not yet implemented on backend.');
+                 /*
+                fetch('/api/run_sorter', {
+                    method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ parcels: scannedParcelData }) // Send scanned data to backend
+                })
+                .then(response => response.json())
+                .then(data => {
+                     scanningLoader.style.display = 'none';
+                     // Re-enable buttons
+                     scanImagesBtn.disabled = false;
+                     takeSnapshotBtn.disabled = false;
+                     runSorterBtn.disabled = false;
+
+                     if(data.success) {
+                         scanStatus.textContent = data.message || 'Sorting completed.';
+                         showNotification('Parcel sorting completed');
+                         // You might want to update the display based on sorting results
+                         // or clear scanned data if parcels are moved
+                         // scannedParcelData = [];
+                         // renderParcelResults([]);
+                     } else {
+                         scanStatus.textContent = 'Sorting failed: ' + (data.error || '');
+                         showNotification('Sorting failed.', true);
+                     }
+                })
+                .catch(error => {
+                     scanningLoader.style.display = 'none';
+                     // Re-enable buttons
+                     scanImagesBtn.disabled = false;
+                     takeSnapshotBtn.disabled = false;
+                     runSorterBtn.disabled = false;
+                     scanStatus.textContent = 'Error running sorter.';
+                     showNotification('Error running sorter.', true);
+                     console.error('Sorter error:', error);
+                });
+                 */
+             });
+
+
+            // --- Sorting Button Logic ---
+
+            // Add click handlers to the sort buttons
+            sortButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove 'active' class from all sort buttons
+                    sortButtons.forEach(btn => btn.classList.remove('active', 'bg-terminal-green', 'text-terminal-black'));
+                    // Add 'active' class and terminal highlight to the clicked button
+                    this.classList.add('active', 'bg-terminal-green', 'text-terminal-black');
+                    this.classList.remove('bg-terminal-gray', 'text-terminal-light-gray');
+
+
+                    const sortValue = this.getAttribute('data-sort');
+                    let filteredParcels;
+
+                    if (sortValue === 'all') {
+                        // Show all scanned parcels
+                        filteredParcels = scannedParcelData;
+                    } else {
+                        // Filter parcels by courier name (case-insensitive)
+                        filteredParcels = scannedParcelData.filter(parcel =>
+                            parcel.courier.toLowerCase().includes(sortValue.toLowerCase())
+                             // Using includes for slightly more flexible matching (e.g. 'ninja van' matches 'ninjavan')
+                        );
+                    }
+
+                    // Render the filtered results
+                    renderParcelResults(filteredParcels);
+                });
+            });
+
+            // --- Function to Render Parcel Results in Terminal Style ---
+
+            // Renders the list of parcels in the scan results area
+            function renderParcelResults(parcelsToRender) {
+                // If no parcels, show the empty state message
+                if (!parcelsToRender || parcelsToRender.length === 0) {
+                     // Check if there's any data at all to differentiate "no results" vs "never scanned"
+                     const hasScannedDataEver = scannedParcelData.length > 0;
+                    scanResults.innerHTML = `
+                        <div class="empty-state">
+                             <svg viewBox="0 0 24 24">
+                                 <path d="M20 6H10V5H8V6H4C2.9 6 2 6.9 2 8V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V8C22 6.9 21.1 6 20 6ZM20 19H4V8H20V19Z"/>
+                                 <path d="M13 10H11V13H8V15H11V18H13V15H16V13H13V10Z"/>
+                             </svg>
+                            <p>${hasScannedDataEver ? 'NO MATCHING PARCELS FOUND' : 'NO PARCELS SCANNED YET'}</p>
+                            ${hasScannedDataEver ? '' : '<p class="text-sm mt-2">TAKE A SNAPSHOT OR SCAN IMAGES</p>'}
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Build the HTML string for the parcel outputs
+                let html = '';
+                parcelsToRender.forEach(parcel => {
+                    // Determine status color based on presence of extracted data
+                    const statusColor = (parcel.courier !== 'UNKNOWN COURIER' && parcel.province !== 'UNKNOWN PROVINCE' && parcel.raw_text !== 'NO RAW TEXT') ? 'terminal-green' : 'terminal-yellow';
+
+                    html += `
+                        <div class="parcel-output-block">
+                             <div class="output-line"><span class="output-label">STATUS:</span> <span class="output-value text-${statusColor}">${statusColor === 'terminal-green' ? 'SUCCESS' : 'NEEDS REVIEW'}</span></div>
+                            <div class="output-line"><span class="output-label">PARCEL ID:</span> <span class="output-value">${parcel.id}</span></div>
+                            <div class="output-line"><span class="output-label">FILENAME:</span> <span class="output-value">${parcel.filename}</span></div>
+                            <div class="output-line"><span class="output-label">COURIER:</span> <span class="output-courier">${parcel.courier}</span></div>
+                            <div class="output-line"><span class="output-label">PROVINCE:</span> <span class="output-value">${parcel.province}</span></div>
+                            <div class="output-line"><span class="output-label">RAW TEXT:</span> <span class="output-value">${parcel.raw_text.substring(0, 80)}${parcel.raw_text.length > 80 ? '...' : ''}</span></div>
+                            <div class="output-line"><span class="output-label">SCANNED:</span> <span class="output-timestamp">${parcel.timestamp}</span></div>
+                        </div>
+                    `;
+                });
+
+                // Set the inner HTML of the scan results area
+                scanResults.innerHTML = html;
+            }
+
+            // Initial render of empty state when the page loads
+             // This will display "NO PARCELS SCANNED YET" initially
+            renderParcelResults([]);
+
+
+            // You might want to fetch initial status of camera, OCR, Servo from backend on page load
+            // and update the status dots accordingly. The Flask route passes these, but you'd need JS
+            // to read those variables from the template and update the status dots.
+            // Example (assuming the status dots have IDs like #statusCamera, #statusOCR, #statusServo)
+             const statusCameraDot = document.querySelector('.status-item:nth-child(1) .status-dot');
+             const statusOCRDot = document.querySelector('.status-item:nth-child(2) .status-dot');
+             const statusServoDot = document.querySelector('.status-item:nth-child(3) .status-dot');
+
+             // This relies on Flask variables passed to the template.
+             // If these variables are 'True', the dots should be green (active).
+             // If 'False', they could be red (inactive). The CSS already has active/inactive classes.
+             // You would need to add/remove these classes here based on the {{ variables }}.
+
+             if ({{ camera_available | tojson }}) {
+                 statusCameraDot.classList.add('bg-terminal-green', 'shadow-md', 'shadow-terminal-green/50');
+                 statusCameraDot.classList.remove('bg-terminal-gray'); // Assuming default is gray if inactive
+             } else {
+                 statusCameraDot.classList.add('bg-terminal-red', 'shadow-md', 'shadow-terminal-red/50');
+                 statusCameraDot.classList.remove('bg-terminal-green', 'shadow-md', 'shadow-terminal-green/50');
+             }
+
+              if ({{ ocr_module_available | tojson }}) {
+                  statusOCRDot.classList.add('bg-terminal-green', 'shadow-md', 'shadow-terminal-green/50');
+                  statusOCRDot.classList.remove('bg-terminal-gray');
+              } else {
+                  statusOCRDot.classList.add('bg-terminal-red', 'shadow-md', 'shadow-terminal-red/50');
+                  statusOCRDot.classList.remove('bg-terminal-green', 'shadow-md', 'shadow-terminal-green/50');
+             }
+
+             // Assuming servo control status is also passed or derived
+             // For now, linking it to ocr_module_available as a proxy
+             if ({{ ocr_module_available | tojson }} && {{ camera_available | tojson }} ) { // Simple assumption: Servo needs camera and OCR to be useful
+                 statusServoDot.classList.add('bg-terminal-green', 'shadow-md', 'shadow-terminal-green/50');
+                 statusServoDot.classList.remove('bg-terminal-gray');
+             } else {
+                 statusServoDot.classList.add('bg-terminal-red', 'shadow-md', 'shadow-terminal-red/50');
+                  statusServoDot.classList.remove('bg-terminal-green', 'shadow-md', 'shadow-terminal-green/50');
+             }
+
+
+        });
+    </script>
+</body>
+</html>

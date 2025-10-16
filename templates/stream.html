@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APS Camera System</title>
+    <style>
+        :root {
+            --main-bg-color: #000;
+            --text-color: #0f0;
+            --border-color: #0f0;
+            --highlight-color: #00ff00;
+            --secondary-color: #007700;
+            --terminal-font: 'Courier New', monospace;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: var(--main-bg-color);
+            color: var(--text-color);
+            font-family: var(--terminal-font);
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        
+        /* Header styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .status-indicator {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            background-color: var(--highlight-color);
+            box-shadow: 0 0 5px var(--highlight-color);
+            animation: blink 2s infinite alternate;
+        }
+        
+        /* Main content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 10px;
+            padding: 10px 0;
+            height: 100%; /* Changed from fixed calc to be more flexible */
+            overflow: hidden; /* Added to contain elements */
+        }
+        
+        .video-container {
+            position: relative;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #050505; /* Darker bg for video area */
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures video covers the container */
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            border: 2px solid transparent; /* Kept for structure, corners will overlay */
+            box-sizing: border-box;
+        }
+        
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: var(--highlight-color);
+            opacity: 0.8;
+        }
+        
+        .top-left {
+            top: 0;
+            left: 0;
+            border-top: 2px solid;
+            border-left: 2px solid;
+        }
+        
+        .top-right {
+            top: 0;
+            right: 0;
+            border-top: 2px solid;
+            border-right: 2px solid;
+        }
+        
+        .bottom-left {
+            bottom: 0;
+            left: 0;
+            border-bottom: 2px solid;
+            border-left: 2px solid;
+        }
+        
+        .bottom-right {
+            bottom: 0;
+            right: 0;
+            border-bottom: 2px solid;
+            border-right: 2px solid;
+        }
+        
+        .scan-line {
+            position: absolute;
+            height: 2px;
+            width: 100%;
+            background-color: var(--highlight-color);
+            opacity: 0.5;
+            animation: scan 3s linear infinite;
+        }
+        
+        .tracking-box {
+            position: absolute;
+            border: 2px dashed var(--highlight-color);
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-sizing: border-box; /* Ensure border is inside */
+        }
+        
+        .tracking-box.active {
+            opacity: 1;
+        }
+        
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .info-section {
+            border: 1px solid var(--secondary-color);
+            padding: 8px;
+        }
+        
+        .section-title {
+            margin-top: 0;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--highlight-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .data-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .terminal-output {
+            background-color: rgba(0, 50, 0, 0.3);
+            border: 1px solid var(--secondary-color);
+            padding: 8px;
+            font-size: 12px;
+            height: 150px; /* Fixed height, content will scroll */
+            overflow-y: auto;
+            margin-top: auto; /* Pushes to bottom if info-panel has space */
+            flex-grow: 1; /* Allows it to take remaining space if needed */
+        }
+        
+        .terminal-line {
+            margin: 2px 0;
+            line-height: 1.3;
+        }
+        
+        .timestamp {
+            color: var(--secondary-color);
+        }
+        
+        /* Footer styles */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; /* Align items vertically */
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+            font-size: 14px;
+        }
+        
+        .system-status {
+            display: flex;
+            gap: 15px;
+        }
+        
+        /* Animations */
+        @keyframes blink {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        
+        .pulse { /* Not used in this HTML, but defined */
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: linear-gradient(rgba(0, 255, 0, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 255, 0, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+        
+        /* Control buttons */
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            cursor: pointer;
+            font-family: var(--terminal-font);
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary-color);
+            color: #000; /* Text color on hover for contrast */
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">APS::OCR_SYSTEM</div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>CAMERA ONLINE</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>OCR ACTIVE</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator"></div>
+                    <span>CONVEYOR READY</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="video-container">
+                <video id="video" autoplay muted playsinline></video> <div class="video-overlay">
+                    <div class="corner top-left"></div>
+                    <div class="corner top-right"></div>
+                    <div class="corner bottom-left"></div>
+                    <div class="corner bottom-right"></div>
+                    <div class="scan-line"></div>
+                    <div class="grid-overlay"></div>
+                    <div class="tracking-box" id="trackingBox"></div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-section">
+                    <h3 class="section-title">Package Data</h3>
+                    <div class="data-row">
+                        <span>ID:</span>
+                        <span id="package-id">--</span>
+                    </div>
+                    <div class="data-row">
+                        <span>Dimensions:</span>
+                        <span id="package-dimensions">--</span>
+                    </div>
+                    <div class="data-row">
+                        <span>OCR Status:</span>
+                        <span id="ocr-status">IDLE</span>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h3 class="section-title">System Status</h3>
+                    <div class="data-row">
+                        <span>CPU Load:</span>
+                        <span id="cpu-load">--</span> </div>
+                    <div class="data-row">
+                        <span>OCR Conf:</span>
+                        <span id="ocr-conf">--</span>
+                    </div>
+                    <div class="data-row">
+                        <span>Belt Speed:</span>
+                        <span id="belt-speed">--</span>
+                    </div>
+                </div>
+                
+                <div class="terminal-output" id="terminal">
+                    </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div class="system-status">
+                <span class="status-item">
+                    <div class="status-indicator" id="footer-system-indicator"></div>
+                    <span id="footer-system-status-text">SYSTEM STANDBY</span>
+                </span>
+            </div>
+            <div class="controls">
+                <button class="btn" id="startBtn">START PROCESSING</button>
+                <button class="btn" id="pauseBtn">PAUSE PROCESSING</button>
+                <button class="btn" id="settingsBtn">SETTINGS</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const video = document.getElementById('video');
+            const trackingBox = document.getElementById('trackingBox');
+            const terminal = document.getElementById('terminal');
+            const packageIdEl = document.getElementById('package-id');
+            const packageDimensionsEl = document.getElementById('package-dimensions');
+            const ocrStatusEl = document.getElementById('ocr-status');
+            const ocrConfEl = document.getElementById('ocr-conf');
+            // Example: CPU load and belt speed might come from other system sensors/APIs
+            const cpuLoadEl = document.getElementById('cpu-load'); 
+            const beltSpeedEl = document.getElementById('belt-speed');
+
+            const footerStatusIndicator = document.getElementById('footer-system-indicator');
+            const footerStatusText = document.getElementById('footer-system-status-text');
+
+            let processingInterval = null;
+            let isProcessingPaused = true;
+
+            // Log function for terminal
+            function logToTerminal(message, type = 'INFO') {
+                const now = new Date();
+                const timestamp = now.toTimeString().split(' ')[0];
+                const line = document.createElement('div');
+                line.className = 'terminal-line';
+                let color = 'var(--text-color)';
+                if (type === 'ERROR') color = '#ff4d4d'; // Red for errors
+                if (type === 'SUCCESS') color = 'var(--highlight-color)'; // Green for success
+                
+                line.innerHTML = `<span class="timestamp">[${timestamp}]</span> <span style="color:${color};">[${type}]</span> ${message}`;
+                terminal.appendChild(line);
+                terminal.scrollTop = terminal.scrollHeight; // Auto-scroll to bottom
+            }
+
+            // Initialize system
+            logToTerminal('System initializing...');
+            footerStatusText.textContent = 'SYSTEM INITIALIZING';
+
+            // Start camera if available
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: true }) 
+                    .then(function(stream) {
+                        video.srcObject = stream;
+                        video.onloadedmetadata = () => { // Ensure video is loaded before logging
+                           logToTerminal('Camera stream connected successfully.', 'SUCCESS');
+                           footerStatusIndicator.style.backgroundColor = 'var(--highlight-color)';
+                           footerStatusText.textContent = 'SYSTEM READY';
+                           isProcessingPaused = false; // Ready to start processing
+                           document.getElementById('startBtn').disabled = false;
+                           document.getElementById('pauseBtn').disabled = false;
+                        };
+                    })
+                    .catch(function(err) {
+                        logToTerminal(`Camera access denied or error: ${err.message}`, 'ERROR');
+                        footerStatusIndicator.style.backgroundColor = '#ff4d4d'; // Red
+                        footerStatusText.textContent = 'CAMERA ERROR';
+                        // Disable processing buttons if camera fails
+                        document.getElementById('startBtn').disabled = true;
+                        document.getElementById('pauseBtn').disabled = true;
+                    });
+            } else {
+                logToTerminal('getUserMedia not supported in this browser.', 'ERROR');
+                footerStatusIndicator.style.backgroundColor = '#ff4d4d';
+                footerStatusText.textContent = 'BROWSER UNSUPPORTED';
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = true;
+            }
+            
+            // Function to capture a frame and send to backend
+            async function processCurrentFrame() {
+                if (isProcessingPaused || !video.srcObject || video.paused || video.ended) {
+                    // logToTerminal('Processing skipped: Stream not active or paused.');
+                    return; 
+                }
+
+                ocrStatusEl.textContent = 'CAPTURING...';
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // Convert canvas to Blob (e.g., image/jpeg or image/png)
+                canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        logToTerminal('Failed to create blob from canvas.', 'ERROR');
+                        ocrStatusEl.textContent = 'CAPTURE FAIL';
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('frame', blob, 'frame.jpg');
+                    
+                    logToTerminal('Sending frame for processing...');
+                    ocrStatusEl.textContent = 'PROCESSING...';
+
+                    try {
+                        // **BACKEND INTERACTION POINT**
+                        // Replace '/api/process_frame' with your actual backend endpoint
+                        const response = await fetch('/api/process_frame', {
+                            method: 'POST',
+                            body: formData,
+                            // Add any necessary headers, e.g., for authentication
+                            // headers: { 'Authorization': 'Bearer YOUR_TOKEN_HERE' }
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({ detail: 'Unknown server error' }));
+                            throw new Error(`Server error: ${response.status} - ${errorData.detail || response.statusText}`);
+                        }
+
+                        const data = await response.json();
+                        logToTerminal(`Processing complete for package: ${data.packageId || 'N/A'}`, 'SUCCESS');
+
+                        // Update UI with data from backend
+                        packageIdEl.textContent = data.packageId || '--';
+                        packageDimensionsEl.textContent = data.dimensions ? `${data.dimensions.width}cm x ${data.dimensions.height}cm x ${data.dimensions.depth}cm` : '--';
+                        ocrStatusEl.textContent = data.ocrStatus || 'COMPLETE';
+                        ocrConfEl.textContent = data.ocrConfidence ? `${data.ocrConfidence.toFixed(1)}%` : '--';
+
+                        // Update tracking box (example: if backend sends coordinates)
+                        if (data.trackingBox) {
+                            trackingBox.style.left = `${data.trackingBox.x}%`;
+                            trackingBox.style.top = `${data.trackingBox.y}%`;
+                            trackingBox.style.width = `${data.trackingBox.width}%`;
+                            trackingBox.style.height = `${data.trackingBox.height}%`;
+                            trackingBox.classList.add('active');
+
+                            // Hide box after a delay
+                            setTimeout(() => {
+                                trackingBox.classList.remove('active');
+                            }, 2000);
+                        } else {
+                            trackingBox.classList.remove('active');
+                        }
+                         // Mock CPU and Belt Speed for display - in reality, this would come from other sources
+                        cpuLoadEl.textContent = `${Math.floor(Math.random() * 50 + 20)}%`;
+                        beltSpeedEl.textContent = `${(Math.random() * 0.5 + 0.3).toFixed(1)} m/s`;
+
+
+                    } catch (error) {
+                        logToTerminal(`Error processing frame: ${error.message}`, 'ERROR');
+                        ocrStatusEl.textContent = 'ERROR';
+                        packageIdEl.textContent = '--';
+                        packageDimensionsEl.textContent = '--';
+                        ocrConfEl.textContent = '--';
+                        trackingBox.classList.remove('active');
+                    } finally {
+                         // Set OCR status to IDLE after a brief period if not continuously processing
+                        if (isProcessingPaused) { // Or based on continuous processing logic
+                             setTimeout(() => { ocrStatusEl.textContent = 'IDLE'; }, 2000);
+                        }
+                    }
+                }, 'image/jpeg', 0.9); // MIME type and quality for JPEG
+            }
+            
+            // Simulation controls
+            document.getElementById('startBtn').addEventListener('click', () => {
+                if (!video.srcObject) {
+                    logToTerminal('Cannot start: Camera not available.', 'ERROR');
+                    return;
+                }
+                isProcessingPaused = false;
+                logToTerminal('Conveyor system STARTED / Processing Resumed', 'INFO');
+                footerStatusText.textContent = 'SYSTEM PROCESSING';
+                ocrStatusEl.textContent = 'WAITING...';
+                // To process periodically:
+                if (processingInterval) clearInterval(processingInterval); // Clear existing interval
+                processingInterval = setInterval(processCurrentFrame, 5000); // Process every 5 seconds
+                processCurrentFrame(); // Process immediately once
+            });
+            
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                isProcessingPaused = true;
+                if (processingInterval) {
+                    clearInterval(processingInterval);
+                    processingInterval = null;
+                }
+                logToTerminal('Conveyor system PAUSED / Processing Suspended', 'INFO');
+                footerStatusText.textContent = 'SYSTEM PAUSED';
+                ocrStatusEl.textContent = 'IDLE';
+                trackingBox.classList.remove('active');
+            });
+            
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                logToTerminal('Settings panel button clicked (functionality not implemented).', 'INFO');
+                // This would open a settings modal or navigate to a settings page
+            });
+            
+            // Initial log after DOM content is loaded and base JS is ready
+            logToTerminal('APS OCR System UI Initialized.');
+            logToTerminal('Waiting for camera permission and user start.');
+            document.getElementById('startBtn').disabled = true; // Disabled until camera is ready
+            document.getElementById('pauseBtn').disabled = true; // Disabled until camera is ready
+
+        });
+    </script>
+</body>
+</html>

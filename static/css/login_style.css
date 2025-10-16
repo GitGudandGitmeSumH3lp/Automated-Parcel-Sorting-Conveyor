@@ -1,0 +1,368 @@
+:root {
+    /* Spotify-Inspired Color Palette - More Vibrant Green Usage */
+    --primary-bg-color: #121212;
+    --secondary-bg-color: #1F1F1F; /* Slightly lighter card for better depth with new bg */
+    --accent-color-primary: #1DB954; /* Spotify Green */
+    --accent-color-secondary: #1ED760; /* Brighter Spotify Green */
+    --accent-color-vibrant-glow: #2EFF7B; /* Even brighter for glows */
+    --text-color-primary: #FFFFFF;
+    --text-color-secondary: #B3B3B3;
+    --input-bg-color: #181818;
+    --input-border-color: #404040;
+    --input-focus-border: var(--accent-color-primary);
+    --error-color: #FF6B6B;
+    --conveyor-bg: #222;
+    --conveyor-lines: #333;
+    --parcel-color: #5A5A5A;
+    --parcel-highlight: var(--accent-color-vibrant-glow);
+
+    --font-main: 'Montserrat', sans-serif;
+    --font-futuristic-title: 'Orbitron', sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--primary-bg-color);
+    color: var(--text-color-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+/* --- NEW LOGISTICS ANIMATIONS --- */
+.logistics-animation-container {
+    position: absolute;
+    bottom: 0; /* Position at the bottom */
+    left: 0;
+    width: 100%;
+    height: 25%; /* Adjust height as needed */
+    min-height: 150px; /* Minimum height for visibility */
+    max-height: 250px;
+    z-index: 0; /* Behind the login form */
+    overflow: hidden;
+    /* background: linear-gradient(to top, rgba(18,18,18,1) 0%, rgba(18,18,18,0) 100%); */ /* Optional fade */
+}
+
+.conveyor-belt-system {
+    position: absolute;
+    bottom: 20px; /* Distance from page bottom */
+    left: 0;
+    width: 100%;
+    height: 80px; /* Height of the conveyor belt itself */
+}
+
+.conveyor-belt-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%; /* Double width for seamless looping */
+    height: 100%;
+    background-image:
+        linear-gradient(var(--conveyor-lines) 1px, transparent 1px),
+        linear-gradient(90deg, var(--conveyor-lines) 1px, transparent 1px),
+        repeating-linear-gradient(
+            45deg,
+            var(--conveyor-bg),
+            var(--conveyor-bg) 20px,
+            #2a2a2a 20px, /* Slightly different shade for texture */
+            #2a2a2a 40px
+        );
+    background-size: 20px 20px, 20px 20px, 100% 100%;
+    border-top: 3px solid var(--accent-color-secondary);
+    border-bottom: 3px solid var(--accent-color-secondary);
+    box-shadow: 0 -5px 15px rgba(29, 185, 84, 0.2), 0 5px 15px rgba(29, 185, 84, 0.2);
+    animation: moveConveyor 8s linear infinite;
+    display: flex; /* To place segments side-by-side if needed, but bg handles it */
+}
+
+@keyframes moveConveyor {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); } /* Moves one full width of the original viewport */
+}
+
+.parcels-container {
+    position: absolute;
+    bottom: 15px; /* Parcels sit on the belt, adjust based on parcel size */
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* Parcels appear/disappear at edges */
+}
+
+.parcel {
+    position: absolute;
+    width: 60px;
+    height: 45px;
+    background-color: var(--parcel-color);
+    border: 1px solid #444;
+    border-radius: 3px;
+    bottom: 0; /* Sit on the conveyor base line */
+    animation-name: moveParcel;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-color-secondary);
+    font-size: 1.5em;
+    overflow: hidden; /* For icon */
+}
+
+.parcel i {
+    opacity: 0.7;
+}
+
+/* Individual parcel animations for staggered effect and varied speeds */
+.parcel.p1 { animation-duration: 10s; left: -70px; animation-delay: 0s; background-color: #666; }
+.parcel.p2 { animation-duration: 12s; left: -70px; animation-delay: 3s; width: 50px; height: 50px; background-color: #505050;}
+.parcel.p3 { animation-duration: 9s;  left: -70px; animation-delay: 6s; width: 70px; height: 40px; background-color: #5E5E5E;}
+.parcel.p4 { animation-duration: 11s; left: -70px; animation-delay: 8s; width: 40px; height: 60px; background-color: #555;}
+
+
+@keyframes moveParcel {
+    0% { transform: translateX(0vw); opacity: 0; } /* Start off-screen to the left */
+    10% { opacity: 1; }
+    90% { transform: translateX(110vw); opacity: 1; } /* Move across the full viewport width and a bit more */
+    100% { transform: translateX(110vw); opacity: 0; } /* Disappear off-screen to the right */
+}
+
+.scanner-beam-container {
+    position: absolute;
+    top: -70px; /* Position above the belt, relative to .conveyor-belt-system */
+    left: 50%; /* Center the scan area */
+    transform: translateX(-50%);
+    width: 100px; /* Width of the scan area */
+    height: 150px; /* Height of the beam effect */
+    overflow: hidden;
+    /* pointer-events: none; */
+}
+
+.scanner-beam {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 4px; /* Thickness of the beam */
+    height: 100%;
+    background-color: var(--accent-color-vibrant-glow);
+    box-shadow: 0 0 10px var(--accent-color-vibrant-glow),
+                0 0 20px var(--accent-color-vibrant-glow),
+                0 0 30px var(--accent-color-primary);
+    animation: scanAnimation 2s linear infinite;
+    border-radius: 2px;
+}
+
+@keyframes scanAnimation {
+    0% { transform: translate(-50%, -100%); opacity: 0; } /* Starts above */
+    20% { opacity: 0.8; }
+    80% { opacity: 0.8; }
+    100% { transform: translate(-50%, 100%); opacity: 0; } /* Ends below */
+}
+
+/* Parcel highlight when "scanned" - This is a simplified approach.
+   For perfect sync with the beam, JS would be better.
+   Here, we'll make parcels passing the center of the screen (scan zone) glow.
+*/
+.parcel.scanned-briefly { /* This class would be toggled by JS for precise scanning */
+    border: 2px solid var(--parcel-highlight);
+    box-shadow: 0 0 15px var(--parcel-highlight);
+}
+/* CSS only approach for pseudo-scan: parcels get a highlight during part of their journey */
+@keyframes parcelScanEffect { /* Apply this to parcels instead of just 'moveParcel' if desired for general glow */
+  0%, 100% { border-color: #444; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); }
+  45%, 55% { /* Around the middle of their journey */
+    border-color: var(--parcel-highlight);
+    box-shadow: 0 0 10px var(--parcel-highlight), 0 0 5px var(--parcel-highlight) inset;
+    /* color: var(--parcel-highlight); */ /* Make icon glow too */
+  }
+}
+/* Example if using the above keyframe:
+.parcel.p1 { animation: parcelScanEffect 10s linear infinite, moveParcel 10s linear infinite; ... }
+This gets complex with multiple animations on 'transform'. Simpler to just let the beam be a visual.
+*/
+
+/* --- END OF NEW LOGISTICS ANIMATIONS --- */
+
+
+/* Entrance Animations (from previous version) */
+.anim-group {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: fadeInUp 0.6s ease-out forwards;
+}
+.anim-delay-1 { animation-delay: 0.1s; }
+.anim-delay-2 { animation-delay: 0.25s; }
+.anim-delay-3 { animation-delay: 0.4s; }
+.anim-delay-4 { animation-delay: 0.5s; }
+.anim-delay-5 { animation-delay: 0.6s; }
+.anim-delay-6 { animation-delay: 0.7s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-container {
+    background-color: var(--secondary-bg-color);
+    padding: 35px 45px; /* Slightly adjusted padding */
+    border-radius: 10px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6); /* Deeper shadow for more depth */
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+    z-index: 1; /* Above thematic animations */
+    border: 1px solid #2a2a2a;
+    position: relative; /* Ensure it stays above */
+}
+
+.login-header .logo { width: 70px; margin-bottom: 15px; }
+
+.login-header h1.futuristic-font {
+    font-family: var(--font-futuristic-title);
+    color: var(--accent-color-secondary); /* Brighter Green for title */
+    font-size: 2em;
+    margin-bottom: 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(30, 215, 96, 0.3); /* Subtle green glow */
+}
+
+.login-header p {
+    font-size: 0.9em;
+    color: var(--text-color-secondary);
+    margin-bottom: 30px;
+}
+
+.input-group { position: relative; margin-bottom: 20px; }
+
+.input-group .input-icon {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color-secondary);
+    font-size: 1em;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 15px 18px 15px 50px;
+    background-color: var(--input-bg-color);
+    border: 1px solid var(--input-border-color);
+    border-radius: 5px;
+    color: var(--text-color-primary);
+    font-size: 1em;
+    font-family: var(--font-main);
+    transition: border-color 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+    outline: none;
+}
+
+.input-group input::placeholder { color: var(--text-color-secondary); opacity: 0.8; }
+
+.input-group input:focus {
+    border-color: var(--input-focus-border);
+    background-color: #252525; /* Darken slightly on focus */
+    box-shadow: 0 0 10px rgba(29, 185, 84, 0.4); /* Green glow on focus */
+}
+
+.input-highlight {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background-color: var(--accent-color-primary);
+    transition: width 0.3s ease-out;
+    border-radius: 1px;
+}
+
+.input-group input:focus + .input-highlight { width: 100%; }
+
+.error-message {
+    color: var(--error-color);
+    background-color: rgba(255, 107, 107, 0.1);
+    border: 1px solid var(--error-color);
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+    min-height: 1.2em;
+    text-align: left;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 15px; /* Slightly reduced padding */
+    background: linear-gradient(90deg, var(--accent-color-primary), var(--accent-color-secondary)); /* Vibrant Gradient */
+    border: none;
+    border-radius: 50px;
+    color: var(--text-color-primary);
+    font-family: var(--font-main);
+    font-size: 1.1em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-position 0.3s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 0 5px 15px rgba(29, 185, 84, 0.3);
+    background-size: 200% 100%; /* For gradient hover animation */
+}
+
+button[type="submit"]:hover {
+    background-position: right center; /* Shift gradient on hover */
+    transform: scale(1.03);
+    box-shadow: 0 8px 20px rgba(30, 215, 96, 0.5); /* More pronounced shadow */
+}
+
+button[type="submit"]:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 10px rgba(29, 185, 84, 0.4);
+}
+
+button[type="submit"] .button-text,
+button[type="submit"] .button-loader { transition: opacity 0.2s ease-in-out; }
+
+button[type="submit"].loading .button-text { opacity: 0; }
+button[type="submit"].loading .button-loader { display: inline-block !important; opacity: 1; }
+button[type="submit"].loading { /* Consider stopping hover effects when loading */
+    background-position: left center;
+    transform: scale(1);
+}
+
+.login-footer { margin-top: 30px; font-size: 0.75em; color: var(--text-color-secondary); }
+.login-footer p { margin-bottom: 5px; }
+
+@media (max-width: 768px) {
+    .logistics-animation-container {
+        height: 20%;
+        min-height: 120px;
+    }
+    .conveyor-belt-system { height: 60px; }
+    .parcel { width: 50px; height: 35px; font-size: 1.2em; }
+    .parcel.p2 { width: 40px; height: 40px;}
+    .parcel.p3 { width: 60px; height: 30px;}
+    .parcel.p4 { width: 35px; height: 50px;}
+
+    .scanner-beam-container { top: -50px; height: 100px; width: 80px;}
+}
+
+@media (max-width: 500px) {
+    .login-container { padding: 30px 25px; margin: 20px auto; } /* Center on small screens */
+    .login-header h1.futuristic-font { font-size: 1.7em; }
+    .input-group input { padding: 14px 14px 14px 45px; }
+    button[type="submit"] { font-size: 1em; padding: 14px; }
+
+    .logistics-animation-container { display: none; } /* Optionally hide complex animation on very small screens */
+}

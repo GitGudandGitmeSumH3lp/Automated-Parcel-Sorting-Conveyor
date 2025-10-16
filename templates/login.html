@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Access - Parcel Sorting Control</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login_style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="logistics-animation-container">
+        <div class="conveyor-belt-system">
+            <div class="conveyor-belt-track">
+                <div class="conveyor-segment"></div>
+                <div class="conveyor-segment"></div>
+            </div>
+            <div class="parcels-container">
+                <div class="parcel p1"><i class="fas fa-box-open"></i></div>
+                <div class="parcel p2"><i class="fas fa-cube"></i></div>
+                <div class="parcel p3"><i class="fas fa-box"></i></div>
+                <div class="parcel p4"><i class="fas fa-dolly-flatbed"></i></div>
+            </div>
+            <div class="scanner-beam-container">
+                <div class="scanner-beam"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-header anim-group anim-delay-1">
+            <h1 class="futuristic-font">SYSTEM ACCESS</h1>
+            <p>Parcel Sorting & OCR Control</p>
+        </div>
+        <form id="loginForm" method="POST" action="{{ url_for('dashboard') }}">
+            <div class="input-group anim-group anim-delay-2">
+                <span class="input-icon"><i class="fas fa-user-cog"></i></span>
+                <input type="text" id="username" name="username" placeholder="Operator ID" required>
+                <span class="input-highlight"></span>
+            </div>
+            <div class="input-group anim-group anim-delay-3">
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
+                <input type="password" id="password" name="password" placeholder="Access Code" required>
+                <span class="input-highlight"></span>
+            </div>
+            {% if error %}
+                <p class="error-message anim-group anim-delay-4">{{ error }}</p>
+            {% endif %}
+            <button type="submit" id="loginButton" class="anim-group anim-delay-5">
+                <span class="button-text">Authenticate</span>
+                <span class="button-loader" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
+        </form>
+        <div class="login-footer anim-group anim-delay-6">
+            <p>&copy; <span id="currentYear"></span> Automated Solutions Inc. All rights reserved.</p>
+            <p>System Version: 3.0.0 (Green Flow Theme)</p>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/login_script.js') }}"></script>
+</body>
+</html>

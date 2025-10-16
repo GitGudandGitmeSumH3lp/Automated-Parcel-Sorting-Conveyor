@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Parcel System Terminal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f0;
+            --secondary: #00b3b3;
+            --background: #000;
+            --terminal-bg: #000;
+            --text: #0f0;
+            --dark-accent: #111;
+            --light-accent: #2a2a2a;
+            --alert: #ff0033;
+            --success: #00ff66;
+            --warning: #ffcc00;
+
+            /* Color Scheme from dashboard.html for new header elements (can be adjusted further) */
+            --header-primary-color: #1DB954; /* Green from SortIT */
+            --header-text-light: #B3B3B3;
+            --header-text-white: #FFFFFF;
+            --header-bg-card: #1e1e1e; /* Darker background for contrast */
+        }
+
+        @font-face {
+            font-family: 'VT323';
+            src: url('https://cdnjs.cloudflare.com/ajax/libs/font-families/vt323/VT323-Regular.ttf') format('truetype');
+        }
+         /* Font Awesome 6 Support */
+        @font-face {
+            font-family: 'Font Awesome 6 Free';
+            font-style: normal;
+            font-weight: 900;
+            font-display: block;
+            src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/webfonts/fa-solid-900.woff2") format("woff2"),
+                 url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/webfonts/fa-solid-900.ttf") format("truetype");
+        }
+        @font-face {
+            font-family: 'Font Awesome 6 Brands';
+            font-style: normal;
+            font-weight: 400;
+            font-display: block;
+            src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/webfonts/fa-brands-400.woff2") format("woff2"),
+                 url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/webfonts/fa-brands-400.ttf") format("truetype");
+        }
+        .fas {
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        .fab {
+            font-family: 'Font Awesome 6 Brands';
+            font-weight: 400;
+        }
+
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'VT323', 'Courier New', monospace;
+            color: var(--text);
+        }
+
+        body {
+            background-color: var(--background);
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent, transparent 50%, rgba(0, 255, 0, 0.02) 50%, rgba(0, 255, 0, 0.02));
+            background-size: 100% 2px;
+            pointer-events: none;
+            z-index: 100;
+            animation: scanline 10s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100%; }
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            grid-template-rows: auto 1fr 1fr auto auto; /* Added rows for new panels */
+            gap: 10px;
+            /* height: 100vh; -- Removed to allow scrolling if content exceeds viewport */
+            min-height: calc(100vh - 40px); /* Account for body padding */
+        }
+
+        /* New Header Styles (Adapted from dashboard.html) */
+        .header {
+            grid-column: 1 / -1;
+            background-color: var(--terminal-bg); /* Keep terminal bg */
+            border: 1px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            position: sticky; /* Make header sticky */
+            top: -0; /* Adjust based on body padding if needed, to stick at the very top of viewport */
+            z-index: 1000; /* Ensure header is above other content */
+            box-shadow: 0 2px 5px rgba(0, 255, 0, 0.2); /* Subtle green shadow */
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon { /* Terminal style logo icon */
+            color: var(--primary);
+            font-size: 28px; /* VT323 is a bit smaller */
+        }
+
+        .logo-text { /* Terminal style logo text */
+            font-size: 28px;
+            font-weight: normal; /* VT323 is already boldish */
+            color: var(--primary);
+            text-shadow: 0 0 5px var(--primary);
+            letter-spacing: 1px;
+        }
+        .header .system-status-header { /* Renamed to avoid conflict */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header .status-indicator-header { /* Renamed */
+             display: flex;
+             align-items: center;
+             font-size: 14px; /* VT323 is smaller */
+             color: var(--primary);
+        }
+        .header .indicator-dot-header { /* Renamed */
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+            background-color: var(--primary); /* Green for active */
+            box-shadow: 0 0 6px var(--primary);
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 3px var(--primary); }
+            50% { box-shadow: 0 0 8px var(--primary); }
+            100% { box-shadow: 0 0 3px var(--primary); }
+        }
+
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links a, .nav-links button { /* Applied to both a and button for logout */
+            color: var(--text); /* Terminal text color */
+            text-decoration: none;
+            font-size: 16px; /* Adjusted for VT323 */
+            padding: 5px 8px;
+            border: 1px solid transparent; /* For spacing, matching btn-outline */
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav-links a:hover, .nav-links button:hover {
+            color: var(--background); /* Black bg */
+            background-color: var(--primary); /* Green highlight */
+            text-shadow: none;
+        }
+
+        .nav-links .btn-nav { /* specific class for nav buttons if needed */
+            background-color: var(--dark-accent);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            cursor: pointer;
+        }
+         .nav-links .btn-nav:hover {
+            background-color: var(--primary);
+            color: var(--terminal-bg);
+        }
+
+        .nav-links .nav-text { /* Keep nav text visible */
+            display: inline;
+        }
+        .nav-links i { /* Ensure icons are colored correctly */
+            font-size: 14px; /* Adjust icon size if needed */
+        }
+
+
+        .panel {
+            border: 1px solid var(--primary);
+            padding: 10px;
+            background-color: var(--terminal-bg);
+            position: relative;
+            overflow: auto; /* Changed from hidden to auto if content overflows */
+        }
+
+        .panel-header {
+            border-bottom: 1px solid var(--primary);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .panel .controls { /* Panel window controls */
+            display: flex;
+            gap: 5px;
+        }
+
+        .panel .control-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .panel .minimize { background-color: var(--warning); }
+        .panel .maximize { background-color: var(--success); }
+        .panel .close { background-color: var(--alert); }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--dark-accent);
+            padding: 8px;
+            border: 1px solid var(--light-accent);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        /* Conveyor Belt Animation */
+        .conveyor-container {
+            height: 100px;
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+            background-color: var(--dark-accent);
+            border: 1px solid var(--light-accent);
+        }
+
+        .conveyor-belt {
+            height: 20px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--light-accent),
+                var(--light-accent) 20px,
+                var(--dark-accent) 20px,
+                var(--dark-accent) 40px
+            );
+            position: absolute;
+            bottom: 0;
+            width: 200%;
+            animation: moveConveyor 8s linear infinite;
+        }
+
+        @keyframes moveConveyor {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .parcel {
+            position: absolute;
+            width: 40px;
+            height: 30px;
+            background-color: var(--secondary);
+            bottom: 20px;
+            border: 1px solid var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            animation: moveParcel 10s linear infinite;
+        }
+        .parcel::after {
+            content: "";
+            position: absolute;
+            width: 100%; height: 100%;
+            background: linear-gradient(transparent, rgba(0, 255, 0, 0.1));
+            pointer-events: none;
+        }
+        .parcel:nth-child(2) { animation-delay: 3s; width: 50px; }
+        .parcel:nth-child(3) { animation-delay: 6s; width: 30px; }
+
+        @keyframes moveParcel {
+            0% { transform: translateX(-40px); }
+            100% { transform: translateX(calc(100vw - 100px)); } /* This might need adjustment if panel isn't full width */
+        }
+
+        .ocr-visualization {
+            height: 100px; position: relative; overflow: hidden;
+            margin: 20px 0; background-color: var(--dark-accent);
+            border: 1px solid var(--light-accent);
+        }
+        .scan-line {
+            position: absolute; width: 100%; height: 2px;
+            background-color: var(--primary); box-shadow: 0 0 5px var(--primary);
+            animation: scanOCR 3s ease-in-out infinite;
+        }
+        @keyframes scanOCR { 0%, 100% { top: 0; } 50% { top: calc(100% - 2px); } }
+        .ocr-text { position: absolute; font-size: 10px; color: var(--primary); animation: fadeInOut 3s infinite; }
+        @keyframes fadeInOut { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+        .console { padding: 10px; height: calc(100% - 40px); overflow-y: auto; font-size: 14px; }
+        .log-entry { margin-bottom: 5px; animation: fadeIn 0.3s forwards; opacity: 0; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .timestamp { color: var(--secondary); margin-right: 5px; }
+        .log-info { color: var(--primary); }
+        .log-warning { color: var(--warning); }
+        .log-error { color: var(--alert); }
+
+        .progress-container { width: 100%; background-color: var(--dark-accent); margin: 5px 0; height: 5px; }
+        .progress-bar { height: 100%; background-color: var(--primary); width: 75%; box-shadow: 0 0 5px var(--primary); }
+
+        .data-grid { height: calc(100% - 40px); overflow-y: auto; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th { background-color: var(--dark-accent); border: 1px solid var(--light-accent); padding: 5px; text-align: left; }
+        .data-table td { border: 1px solid var(--light-accent); padding: 5px; }
+        .data-table tr:hover { background-color: var(--dark-accent); }
+
+        .chart-container { display: flex; flex-direction: column; height: 100%; }
+        .chart { display: flex; align-items: flex-end; height: 100px; gap: 5px; margin-top: 10px; }
+        .chart-bar { flex: 1; background-color: var(--primary); box-shadow: 0 0 5px var(--primary); animation: heightAnimation 5s infinite alternate; }
+        .chart-bar:nth-child(2) { animation-delay: 0.5s; } .chart-bar:nth-child(3) { animation-delay: 1s; }
+        .chart-bar:nth-child(4) { animation-delay: 1.5s; } .chart-bar:nth-child(5) { animation-delay: 2s; }
+        @keyframes heightAnimation { 0% { height: 20%; } 100% { height: 80%; } }
+
+        .terminal-footer { border-top: 1px solid var(--primary); margin-top: 10px; padding-top: 5px; font-size: 12px; display: flex; justify-content: space-between; }
+        .blinking-cursor { animation: blink-cursor-anim 1s step-end infinite; }
+        @keyframes blink-cursor-anim { from, to { opacity: 1; } 50% { opacity: 0; } } /* Renamed to avoid conflict */
+
+
+        /* System Control Panel Styles */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Adjusted minmax */
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .control-button, .btn-control { /* Unified class for styling, can add btn-control where needed */
+            background-color: var(--dark-accent);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 12px; /* Increased padding */
+            text-transform: uppercase;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+            display: flex; /* For icon alignment */
+            align-items: center;
+            justify-content: center;
+            gap: 8px; /* Space between icon and text */
+        }
+        .control-button:hover, .btn-control:hover {
+            background-color: var(--primary);
+            color: var(--terminal-bg);
+        }
+        .control-button i, .btn-control i { /* Style for icons inside buttons */
+            font-size: 1em; /* Icon size relative to button font size */
+        }
+
+        /* Specific button states (danger/warning) */
+        .btn-danger { /* For E-STOP or Stop buttons */
+            background-color: var(--alert);
+            border-color: var(--alert);
+            color: var(--terminal-bg);
+        }
+        .btn-danger:hover {
+            background-color: var(--primary); /* Revert to green on hover or a lighter red */
+            border-color: var(--primary);
+            color: var(--terminal-bg);
+        }
+         .btn-warning { /* For diagnostics or attention buttons */
+            background-color: var(--warning);
+            border-color: var(--warning);
+            color: var(--terminal-bg);
+        }
+        .btn-warning:hover {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: var(--terminal-bg);
+        }
+
+
+        .control-item {
+            background-color: var(--dark-accent); padding: 8px; border: 1px solid var(--light-accent);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .control-item .stat-label { font-size: 10px; }
+        .control-item .stat-value { font-size: 14px; }
+
+        /* Speed Slider for Conveyor */
+        .speed-control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+            margin-top: 5px;
+            background-color: var(--dark-accent);
+            padding: 8px;
+            border: 1px solid var(--light-accent);
+        }
+        .speed-control-group .stat-label { width: 100%; text-align: center; margin-bottom: 5px;}
+
+        .speed-slider {
+            -webkit-appearance: none; appearance: none;
+            width: calc(100% - 16px); /* Adjust for padding */
+            height: 8px; background: var(--light-accent);
+            outline: none; opacity: 0.7; transition: opacity .2s;
+            border-radius: 4px; margin: 5px auto;
+        }
+        .speed-slider:hover { opacity: 1; }
+        .speed-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 18px; height: 18px; background: var(--primary);
+            cursor: pointer; border-radius: 50%; border: 2px solid var(--dark-accent);
+        }
+        .speed-slider::-moz-range-thumb {
+            width: 18px; height: 18px; background: var(--primary);
+            cursor: pointer; border-radius: 50%; border: 2px solid var(--dark-accent);
+        }
+        .speed-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text); padding: 0 2px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+
+        /* Active Status Panel Styles */
+        .active-status-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px; padding: 10px 0;
+        }
+        .status-item {
+            background-color: var(--dark-accent); border: 1px solid var(--light-accent);
+            padding: 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .status-item .status-label { font-size: 14px; opacity: 0.9; }
+        .status-item .status-value { font-size: 14px; font-weight: bold; }
+        .status-item .status-value.active { color: var(--success); text-shadow: 0 0 3px var(--success); }
+        .status-item .status-value.inactive { color: var(--warning); text-shadow: 0 0 3px var(--warning); }
+        .status-item .status-value.error { color: var(--alert); text-shadow: 0 0 3px var(--alert); }
+
+        /* Camera status dot */
+        .camera-status-indicator { display: flex; align-items: center; gap: 5px; }
+        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+        .status-dot.offline { background-color: var(--alert); box-shadow: 0 0 5px var(--alert); }
+        .status-dot.online { background-color: var(--success); box-shadow: 0 0 5px var(--success); animation: blink 2s infinite; }
+
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <div class="logo-container">
+                <i class="fas fa-barcode logo-icon"></i> <h1 class="logo-text">APS-TERMINAL</h1>
+            </div>
+            <div class="system-status-header">
+                <div class="status-indicator-header">
+                    <div class="indicator-dot-header"></div>
+                    <span id="header-system-status-text">System Active</span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="https://github.com/GitGudandGitmeSumH3lp/image_processing_system" target="_blank" class="btn-nav">
+                    <i class="fab fa-github"></i> <span class="nav-text">GitHub</span>
+                </a>
+                <a href="{{ url_for('logout') }}" class="btn-nav"> <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Logout</span>
+                </a>
+            </nav>
+        </header>
+
+        <div class="panel"> <div class="panel-header">
+                <div class="panel-title">SYSTEM STATUS</div>
+                <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div>
+            </div>
+            <div class="stats">
+                <div class="stat-item"> <div class="stat-label">PARCELS PROCESSED</div> <div class="stat-value" id="parcels-processed">1,254</div> </div>
+                <div class="stat-item"> <div class="stat-label">OCR ACCURACY</div> <div class="stat-value" id="ocr-accuracy">97.8%</div> </div>
+                <div class="stat-item"> <div class="stat-label">SYSTEM UPTIME</div> <div class="stat-value" id="uptime">18:42:37</div> </div>
+                <div class="stat-item"> <div class="stat-label">QUEUE STATUS</div> <div class="stat-value" id="queue-status">12</div> </div>
+            </div>
+            <div class="conveyor-container"> <div class="conveyor-belt"></div> <div class="parcel">P001</div> <div class="parcel">P002</div> <div class="parcel">P003</div> </div>
+            <div class="ocr-visualization"> <div class="scan-line"></div> <div class="ocr-text" style="top: 20px; left: 10px;">tracking_id: APS2025051001</div> <div class="ocr-text" style="top: 40px; left: 30px;">weight: 3.2kg</div> <div class="ocr-text" style="top: 60px; left: 15px;">destination: SEC-5A</div> </div>
+            <div class="terminal-footer"> <span>SYS: OPERATIONAL</span> <span class="blinking-cursor">_</span> </div>
+        </div>
+
+        <div class="panel"> <div class="panel-header"> <div class="panel-title">CONSOLE OUTPUT</div> <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div> </div>
+            <div class="console" id="console">
+                <div class="log-entry"> <span class="timestamp">[10:05:23]</span> <span class="log-info">System initialized. OCR modules loaded.</span> </div>
+                <div class="log-entry"> <span class="timestamp">[10:05:24]</span> <span class="log-info">Conveyor belt system activated.</span> </div>
+                <div class="log-entry"> <span class="timestamp">[10:06:15]</span> <span class="log-warning">Database connection latency detected.</span> </div>
+            </div>
+        </div>
+
+        <div class="panel"> <div class="panel-header"> <div class="panel-title">PARCEL DATA</div> <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div> </div>
+            <div class="data-grid">
+                <table class="data-table">
+                    <thead> <tr> <th>ID</th> <th>TIMESTAMP</th> <th>WEIGHT</th> <th>DESTINATION</th> <th>STATUS</th> </tr> </thead>
+                    <tbody> <tr> <td>APS2025051001</td><td>10:07:02</td><td>3.2kg</td><td>SEC-5A</td><td>PROCESSED</td> </tr> </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel"> <div class="panel-header"> <div class="panel-title">PERFORMANCE METRICS</div> <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div> </div>
+            <div class="chart-container"> <div>System Load</div> <div class="progress-container"> <div class="progress-bar"></div> </div> <div style="margin-top: 10px;">Hourly Throughput</div> <div class="chart"> <div class="chart-bar" style="height: 40%;"></div> <div class="chart-bar" style="height: 65%;"></div> <div class="chart-bar" style="height: 30%;"></div> <div class="chart-bar" style="height: 70%;"></div> <div class="chart-bar" style="height: 50%;"></div> </div> </div>
+        </div>
+
+        <div class="panel" id="system-control-panel" style="grid-column: 1 / -1;"> <div class="panel-header"> <div class="panel-title">SYSTEM CONTROLS</div> <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div> </div>
+            <div class="controls-grid">
+                <button class="control-button" id="btn-camera-stream"> <i class="fas fa-video"></i> CAM STREAM </button>
+                <button class="control-button" id="btn-find-camera"> <i class="fas fa-search-location"></i> FIND CAM </button>
+                <button class="control-button" id="btn-test-servo"> <i class="fas fa-cogs"></i> TEST SERVO </button>
+                <button class="control-button" id="btn-parcel-generator"> <i class="fas fa-plus-circle"></i> GEN PARCEL</button>
+                <button class="control-button" id="btn-toggle-ocr"> <i class="fas fa-power-off"></i> <span id="ocr-status-text">START OCR</span></button>
+                <button class="control-button" id="btn-toggle-conveyor"> <i class="fas fa-play"></i> <span id="conveyor-power-status-text">START BELT</span></button>
+                <div class="speed-control-group">
+                    <div class="stat-label">CONVEYOR SPEED: <span id="conveyor-speed-value-display">Medium</span></div>
+                    <label for="conveyor-speed-slider-control" class="sr-only">Conveyor Speed</label>
+                    <input type="range" id="conveyor-speed-slider-control" name="conveyor-speed" min="1" max="5" value="3" class="speed-slider">
+                    <div class="speed-labels"> <span>Slow</span><span>Fast</span> </div>
+                </div>
+                <button class="control-button btn-warning" id="btn-run-diagnostics"> <i class="fas fa-stethoscope"></i> DIAGNOSTICS</button>
+                <button class="control-button btn-danger" id="btn-emergency-stop"> <i class="fas fa-exclamation-triangle"></i> E-STOP</button>
+            </div>
+        </div>
+
+        <div class="panel" id="rpi-health-panel">
+            <div class="panel-header"> <div class="panel-title">RASPBERRY PI HEALTH</div> <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div> </div>
+            <div class="stats">
+                <div class="stat-item"> <div class="stat-label">CPU USAGE</div> <div class="stat-value" id="rpi-cpu">45%</div> </div>
+                <div class="stat-item"> <div class="stat-label">MEMORY USAGE</div> <div class="stat-value" id="rpi-mem">60%</div> </div>
+                <div class="stat-item"> <div class="stat-label">TEMPERATURE</div> <div class="stat-value" id="rpi-temp">52°C</div> </div>
+                <div class="stat-item"> <div class="stat-label">DISK USAGE</div> <div class="stat-value" id="rpi-disk">30%</div></div>
+            </div>
+        </div>
+
+        <div class="panel" id="active-statuses-panel">
+            <div class="panel-header"> <div class="panel-title">ACTIVE STATUSES</div> <div class="controls"> <button class="control-btn minimize"></button> <button class="control-btn maximize"></button> <button class="control-btn close"></button> </div> </div>
+            <div class="active-status-grid">
+                <div class="status-item"> <span class="status-label">CAMERA:</span> <div class="camera-status-indicator"> <span class="status-dot offline" id="indicator-camera-status-dot"></span> <span class="status-value" id="indicator-camera-status-text">OFFLINE</span></div> </div>
+                <div class="status-item"> <span class="status-label">SERVOS:</span> <span class="status-value active" id="status-servos">ACTIVE</span> </div>
+                <div class="status-item"> <span class="status-label">CAN BUS:</span> <span class="status-value active" id="status-can">OK</span> </div>
+                <div class="status-item"> <span class="status-label">OCR ENGINE:</span> <span class="status-value inactive" id="indicator-ocr-status">INACTIVE</span> </div>
+                <div class="status-item"> <span class="status-label">CONVEYOR:</span> <span class="status-value inactive" id="indicator-conveyor-status">STOPPED</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update system time
+        function updateTime() {
+            const uptimeElement = document.getElementById('uptime');
+            if (!uptimeElement) return;
+            let [h, m, s] = (uptimeElement.textContent.split(':').map(Number) || [0,0,0]);
+            s++; if (s >= 60) { s = 0; m++; if (m >= 60) { m = 0; h++; } }
+            uptimeElement.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+        setInterval(updateTime, 1000);
+
+        // Console log
+        const consoleElement = document.getElementById('console');
+        const logMessages = [ /* ... existing log messages ... */ ];
+        function addLogEntry(messageText, type = 'info') { // Allow specifying message and type
+            if (!consoleElement) return;
+            const now = new Date();
+            const ts = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+            const logEntry = document.createElement('div'); logEntry.className = 'log-entry';
+            const tsSpan = document.createElement('span'); tsSpan.className = 'timestamp'; tsSpan.textContent = `[${ts}]`;
+            const msgSpan = document.createElement('span'); msgSpan.className = `log-${type}`; msgSpan.textContent = messageText;
+            logEntry.appendChild(tsSpan); logEntry.appendChild(document.createTextNode(' ')); logEntry.appendChild(msgSpan);
+            consoleElement.appendChild(logEntry); consoleElement.scrollTop = consoleElement.scrollHeight;
+            const entries = consoleElement.querySelectorAll('.log-entry'); if (entries.length > 50) consoleElement.removeChild(entries[0]);
+        }
+        // setInterval(() => addLogEntry(logMessages[Math.floor(Math.random() * logMessages.length)].message, logMessages[Math.floor(Math.random() * logMessages.length)].type ), 7000);
+        addLogEntry("Terminal interface initialized.", "info");
+
+
+        // Update parcel counter
+        const parcelsProcessedElement = document.getElementById('parcels-processed');
+        let parcelsProcessedCount = parcelsProcessedElement ? parseInt(parcelsProcessedElement.textContent.replace(/,/g, '')) : 0;
+        function updateParcelsProcessed() {
+            if (!parcelsProcessedElement) return;
+            parcelsProcessedCount += Math.floor(Math.random() * 3) + 1;
+            parcelsProcessedElement.textContent = parcelsProcessedCount.toLocaleString();
+        }
+        // setInterval(updateParcelsProcessed, 8000);
+
+        // RPi Health Data Update
+        function updateRPiHealth() {
+            const rpiCpu = document.getElementById('rpi-cpu'); const rpiMem = document.getElementById('rpi-mem');
+            const rpiTemp = document.getElementById('rpi-temp'); const rpiDisk = document.getElementById('rpi-disk');
+            if(rpiCpu) rpiCpu.textContent = `${Math.floor(Math.random() * 60) + 20}%`;
+            if(rpiMem) rpiMem.textContent = `${Math.floor(Math.random() * 50) + 40}%`;
+            if(rpiTemp) rpiTemp.textContent = `${Math.floor(Math.random() * 20) + 45}°C`;
+            if(rpiDisk) rpiDisk.textContent = `${Math.floor(Math.random() * 40) + 20}%`;
+        }
+        // setInterval(updateRPiHealth, 7000);
+
+
+        // --- System Control Button Functionality ---
+        const btnCameraStream = document.getElementById('btn-camera-stream');
+        const btnFindCamera = document.getElementById('btn-find-camera');
+        const indicatorCameraDot = document.getElementById('indicator-camera-status-dot');
+        const indicatorCameraText = document.getElementById('indicator-camera-status-text');
+        let isCameraStreaming = false;
+
+        if (btnCameraStream) {
+            btnCameraStream.addEventListener('click', () => {
+                isCameraStreaming = !isCameraStreaming;
+                if (isCameraStreaming) {
+                    btnCameraStream.innerHTML = '<i class="fas fa-stop-circle"></i> STOP STREAM';
+                    btnCameraStream.classList.add('btn-danger');
+                    if(indicatorCameraDot) indicatorCameraDot.className = 'status-dot online';
+                    if(indicatorCameraText) indicatorCameraText.textContent = 'STREAMING';
+                    addLogEntry('Camera stream started.', 'info');
+                    window.location.href ="/livestream";
+                } else {
+                    btnCameraStream.innerHTML = '<i class="fas fa-video"></i> CAM STREAM';
+                    btnCameraStream.classList.remove('btn-danger');
+                    // Note: find camera might set it to online, so stopping stream doesn't mean offline unless find also fails
+                    // if(indicatorCameraDot) indicatorCameraDot.className = 'status-dot offline';
+                    // if(indicatorCameraText) indicatorCameraText.textContent = 'OFFLINE';
+                    addLogEntry('Camera stream stopped.', 'info');
+                }
+            });
+        }
+
+        if (btnFindCamera) {
+            btnFindCamera.addEventListener('click', () => {
+                // Instead of simulating camera finding, redirect to nemo.html
+                window.location.href = '/nemo';
+            });
+        }
+        
+
+        const btnTestServo = document.getElementById('btn-test-servo');
+        if (btnTestServo) {
+            btnTestServo.addEventListener('click', () => {
+                addLogEntry('Initiating servo test sequence...', 'info');
+                // Potentially open a new page or send command via AJAX/WebSocket
+                window.open("{{ url_for('test_servo_page') }}", "_blank");
+            });
+        }
+
+        const btnParcelGenerator = document.getElementById('btn-parcel-generator');
+        if (btnParcelGenerator) {
+            btnParcelGenerator.addEventListener('click', () => {
+                addLogEntry('Simulated parcel generated for testing.', 'info');
+                // Update parcel count or other relevant UI
+                updateParcelsProcessed();
+                window.location.href = '/parcelgenerator';
+            });
+        }
+
+        const btnToggleOcr = document.getElementById('btn-toggle-ocr');
+        const ocrStatusTextEl = document.getElementById('ocr-status-text');
+        const indicatorOcrStatus = document.getElementById('indicator-ocr-status');
+        let isOcrEngineRunning = false;
+        if (btnToggleOcr && ocrStatusTextEl && indicatorOcrStatus) {
+            btnToggleOcr.addEventListener('click', () => {
+                isOcrEngineRunning = !isOcrEngineRunning;
+                if (isOcrEngineRunning) {
+                    ocrStatusTextEl.textContent = 'STOP OCR';
+                    btnToggleOcr.classList.add('btn-danger');
+                    btnToggleOcr.querySelector('i').classList.replace('fa-power-off', 'fa-stop-circle');
+                    indicatorOcrStatus.textContent = 'ACTIVE';
+                    indicatorOcrStatus.className = 'status-value active';
+                    addLogEntry('OCR Engine started.', 'info');
+                } else {
+                    ocrStatusTextEl.textContent = 'START OCR';
+                    btnToggleOcr.classList.remove('btn-danger');
+                    btnToggleOcr.querySelector('i').classList.replace('fa-stop-circle', 'fa-power-off');
+                    indicatorOcrStatus.textContent = 'INACTIVE';
+                    indicatorOcrStatus.className = 'status-value inactive';
+                    addLogEntry('OCR Engine stopped.', 'info');
+                }
+            });
+        }
+
+        const btnToggleConveyor = document.getElementById('btn-toggle-conveyor');
+        const conveyorPowerStatusTextEl = document.getElementById('conveyor-power-status-text');
+        const conveyorSpeedSliderEl = document.getElementById('conveyor-speed-slider-control');
+        const conveyorSpeedDisplayEl = document.getElementById('conveyor-speed-value-display');
+        const indicatorConveyorStatus = document.getElementById('indicator-conveyor-status');
+        let isConveyorBeltRunning = false;
+
+        if (btnToggleConveyor && conveyorPowerStatusTextEl && indicatorConveyorStatus) {
+            btnToggleConveyor.addEventListener('click', () => {
+                isConveyorBeltRunning = !isConveyorBeltRunning;
+                if (isConveyorBeltRunning) {
+                    conveyorPowerStatusTextEl.textContent = 'STOP BELT';
+                    btnToggleConveyor.classList.add('btn-danger');
+                    btnToggleConveyor.querySelector('i').classList.replace('fa-play', 'fa-stop');
+                    indicatorConveyorStatus.textContent = 'RUNNING';
+                    indicatorConveyorStatus.className = 'status-value active';
+                    addLogEntry(`Conveyor belt started (Speed: ${conveyorSpeedDisplayEl.textContent}).`, 'info');
+                } else {
+                    conveyorPowerStatusTextEl.textContent = 'START BELT';
+                    btnToggleConveyor.classList.remove('btn-danger');
+                    btnToggleConveyor.querySelector('i').classList.replace('fa-stop', 'fa-play');
+                    indicatorConveyorStatus.textContent = 'STOPPED';
+                    indicatorConveyorStatus.className = 'status-value inactive';
+                    addLogEntry('Conveyor belt stopped.', 'info');
+                }
+            });
+        }
+
+        if (conveyorSpeedSliderEl && conveyorSpeedDisplayEl) {
+            conveyorSpeedSliderEl.addEventListener('input', (event) => {
+                const speedValue = parseInt(event.target.value);
+                let speedText = 'Medium';
+                if (speedValue <= 1) speedText = 'Very Slow';
+                else if (speedValue === 2) speedText = 'Slow';
+                else if (speedValue === 3) speedText = 'Medium';
+                else if (speedValue === 4) speedText = 'Fast';
+                else if (speedValue >= 5) speedText = 'Very Fast';
+                conveyorSpeedDisplayEl.textContent = speedText;
+                addLogEntry(`Conveyor speed set to: ${speedText}`, 'info');
+                // If conveyor is running, might send an update command here
+            });
+        }
+
+        const btnRunDiagnostics = document.getElementById('btn-run-diagnostics');
+        if (btnRunDiagnostics) {
+            btnRunDiagnostics.addEventListener('click', () => {
+                addLogEntry('Running system diagnostics...', 'info');
+                // Simulate diagnostics
+                setTimeout(() => addLogEntry('Diagnostics complete: All systems nominal.', 'success'), 3000);
+            });
+        }
+
+        const btnEmergencyStop = document.getElementById('btn-emergency-stop');
+        if (btnEmergencyStop) {
+            btnEmergencyStop.addEventListener('click', () => {
+                if (confirm('ARE YOU SURE YOU WANT TO PERFORM AN EMERGENCY STOP? This will halt all system operations.')) {
+                    addLogEntry('EMERGENCY STOP ACTIVATED!', 'error');
+                    // Simulate stopping everything
+                    if(isCameraStreaming) btnCameraStream.click(); // turn off stream
+                    if(isOcrEngineRunning) btnToggleOcr.click(); // turn off ocr
+                    if(isConveyorBeltRunning) btnToggleConveyor.click(); // stop conveyor
+                    const headerStatusText = document.getElementById('header-system-status-text');
+                    if(headerStatusText) headerStatusText.textContent = 'SYSTEM HALTED';
+                    if(indicatorCameraDot) indicatorCameraDot.className = 'status-dot offline';
+                    if(indicatorCameraText) indicatorCameraText.textContent = 'OFFLINE';
+                    if(indicatorOcrStatus) { indicatorOcrStatus.textContent = 'HALTED'; indicatorOcrStatus.className = 'status-value error'; }
+                    if(indicatorConveyorStatus) { indicatorConveyorStatus.textContent = 'HALTED'; indicatorConveyorStatus.className = 'status-value error';}
+
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "flutter": "^0.0.5",
+    "lucide-react": "^0.509.0"
+  }
+}

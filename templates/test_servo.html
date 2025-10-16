@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SORT-IT - OCR Servo Control Terminal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --terminal-bg: #0a0a0a;
+            --terminal-text: #00ff41;
+            --terminal-dim-text: #00802b;
+            --terminal-accent: #0abdc6;
+            --terminal-error: #ff5555;
+            --terminal-warning: #ffb86c;
+            --terminal-success: #50fa7b;
+            --terminal-scanline: rgba(0, 255, 65, 0.04);
+            --terminal-glow: 0 0 10px rgba(0, 255, 65, 0.5);
+            --border-terminal: 1px solid rgba(0, 255, 65, 0.2);
+            --border-radius: 4px;
+        }
+
+        @font-face {
+            font-family: 'VT323';
+            src: url('https://fonts.gstatic.com/s/vt323/v17/pxiKyp0ihIEF2isfFJA.woff2') format('woff2');
+        }
+
+        body {
+            background-color: var(--terminal-bg);
+            color: var(--terminal-text);
+            font-family: 'VT323', 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+            min-height: 100vh;
+            letter-spacing: 1px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                var(--terminal-scanline),
+                var(--terminal-scanline) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+            animation: scanlines 0.1s linear infinite;
+            opacity: 0.5;
+        }
+
+        @keyframes scanlines {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 4px; }
+        }
+
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAM1BMVEUAAAD///////////////////////////////////////////////////////////////+3leKVAAAAEHRSTlMAECAwQFBgcICPn6+/z9/vIxqCigAAAOhJREFUWMPtlUsOhCAQBe0RUPzx3P9uk9GFkBk6BuJi6k2KelQV4OcTdNZMQqFDyUWQJBcJ6RKBmJJlEjkBiDwzgKmAzBOAKDLBwBwQxA6gKGYBAaKlWEBMCUCFmMiUGgD0WrFU7YAjPdSZX2AgMjPC9RPANAFM1wRwXbMA/Kgrr7y5NkACJKV+QDR5BfiUB4D3WYAkgE2VAXQDGgP+ADZMupi87YBrJz2r/2Cnuhj7AKDrZFcBWe07AE2n86IBMN4UoLPXcWkBOPuD3f+nh0JWeq9uAJjz5GwC8jZSkyDvZUFWvnMAKGzkxZ47EU8AAAAZdEVYdFNvZnR3YXJlAEFkb2JlIEltYWdlUmVhZHlxyWU8AAAAAElFTkSuQmCC");
+            pointer-events: none;
+            opacity: 0.03;
+            z-index: 9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            border-bottom: var(--border-terminal);
+            padding-bottom: 15px;
+            position: relative;
+        }
+
+        .header::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--terminal-text), transparent);
+            animation: scan 4s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: var(--terminal-glow);
+            position: relative;
+        }
+
+        .header h1 i {
+            color: var(--terminal-accent);
+        }
+
+        .blink {
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .back-btn {
+            color: var(--terminal-dim-text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            padding: 5px 10px;
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            background-color: rgba(0, 255, 65, 0.05);
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .back-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(0, 255, 65, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .back-btn:hover::before {
+            left: 100%;
+        }
+
+        .back-btn:hover {
+            color: var(--terminal-text);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background-color: rgba(0, 255, 65, 0.05);
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--terminal-text), transparent);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .panel-header h2 {
+            font-size: 1.2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+        }
+
+        .panel-header h2 i {
+            color: var(--terminal-accent);
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--terminal-warning); /* Default to warning */
+            position: relative;
+        }
+        .status-indicator.offline {
+            background-color: var(--terminal-error);
+        }
+        .status-indicator.offline::after {
+             border-color: var(--terminal-error);
+        }
+
+
+        .status-indicator::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid var(--terminal-warning);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.active {
+            background-color: var(--terminal-success);
+        }
+
+        .status-indicator.active::after {
+            border-color: var(--terminal-success);
+        }
+
+        @keyframes pulse {
+            0% {
+                width: 16px;
+                height: 16px;
+                opacity: 1;
+            }
+            100% {
+                width: 30px;
+                height: 30px;
+                opacity: 0;
+            }
+        }
+
+        .servo-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .servo-box {
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .servo-box:hover {
+            background-color: rgba(0, 255, 65, 0.1);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .servo-box.active {
+            background-color: rgba(0, 255, 65, 0.15);
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+        }
+
+        .servo-box::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background-color: var(--terminal-text);
+            transition: width 0.3s ease;
+        }
+
+        .servo-box:hover::after,
+        .servo-box.active::after {
+            width: 100%;
+        }
+
+        .servo-box h3 {
+            margin: 0 0 3px 0;
+            font-size: 0.8rem;
+            color: var(--terminal-dim-text);
+        }
+
+        .servo-box .servo-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--terminal-text);
+        }
+
+        .servo-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Adjusted for 3 buttons */
+            gap: 10px;
+            margin-top: 15px;
+        }
+         .servo-buttons.single-row { /* For angle control panel */
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+
+        .btn {
+            padding: 8px;
+            border-radius: var(--border-radius);
+            font-family: 'VT323', 'Courier New', monospace;
+            font-weight: normal;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: var(--border-terminal);
+            background-color: transparent;
+            color: var(--terminal-text);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+            background-color: rgba(128, 128, 128, 0.1);
+            color: var(--terminal-dim-text);
+            border-color: var(--terminal-dim-text);
+        }
+        .btn:disabled:hover {
+            box-shadow: none;
+        }
+        .btn:disabled::before {
+            display: none;
+        }
+
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(0, 255, 65, 0.1),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            background-color: rgba(0, 255, 65, 0.1);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn-primary {
+            background-color: rgba(0, 255, 65, 0.1);
+        }
+
+        .btn-primary:hover {
+            background-color: rgba(0, 255, 65, 0.2);
+        }
+
+        .btn-accent {
+            border-color: var(--terminal-accent);
+            color: var(--terminal-accent);
+        }
+
+        .btn-accent:hover {
+            background-color: rgba(10, 189, 198, 0.1);
+            box-shadow: 0 0 10px rgba(10, 189, 198, 0.5);
+        }
+
+        .angle-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            margin-top: 15px;
+        }
+
+        .angle-display {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 5px 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--terminal-text);
+            min-width: 60px;
+            text-align: center;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            text-shadow: var(--terminal-glow);
+        }
+
+        .angle-controls button {
+            background-color: transparent;
+            color: var(--terminal-text);
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            width: 30px;
+            height: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .angle-controls button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .angle-controls button:hover {
+            background-color: rgba(0, 255, 65, 0.1);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .test-sequences {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .test-card {
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            transition: all 0.3s ease;
+            background-color: rgba(0, 255, 65, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .test-card::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(0, 255, 65, 0.03) 50%,
+                transparent 100%
+            );
+            pointer-events: none;
+        }
+
+        .test-card:hover {
+            background-color: rgba(0, 255, 65, 0.1);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .test-card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .test-card-header i {
+            color: var(--terminal-accent);
+        }
+
+        .test-card-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+        }
+
+        .test-card p {
+            color: var(--terminal-dim-text);
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            flex-grow: 1;
+        }
+
+        .console-section {
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-top: 30px;
+            background-color: rgba(0, 255, 65, 0.05);
+            position: relative;
+        }
+
+        .console-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            padding-bottom: 8px;
+        }
+
+        .console-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+        }
+
+        .console-header h2 i {
+            color: var(--terminal-accent);
+        }
+
+        .console-window {
+            background-color: rgba(0, 0, 0, 0.7);
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            color: var(--terminal-text);
+            height: 150px; /* Increased height */
+            overflow-y: auto;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .console-line {
+            margin: 3px 0;
+            line-height: 1.4;
+            position: relative;
+            padding-left: 15px;
+            word-break: break-all; /* Prevent overflow */
+        }
+
+        .console-line::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--terminal-dim-text);
+        }
+
+        .console-line.success {
+            color: var(--terminal-success);
+        }
+        .console-line.success::before {
+            content: '+';
+            color: var(--terminal-success);
+        }
+
+        .console-line.error {
+            color: var(--terminal-error);
+        }
+        .console-line.error::before {
+            content: '!';
+            color: var(--terminal-error);
+        }
+
+        .console-line.info {
+            color: var(--terminal-accent);
+        }
+        .console-line.info::before {
+            content: '#';
+            color: var(--terminal-accent);
+        }
+
+
+        .console-line.prompt::before {
+            content: '$';
+        }
+
+        .console-button {
+            background-color: transparent;
+            border: var(--border-terminal);
+            color: var(--terminal-dim-text);
+            padding: 5px 10px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .console-button:hover {
+            background-color: rgba(0, 255, 65, 0.1);
+            color: var(--terminal-text);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .servo-visualizer {
+            margin-top: 15px;
+            height: 80px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .servo-arm {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 6px;
+            height: 50px; /* Adjusted for better visual */
+            background-color: var(--terminal-accent);
+            transform-origin: bottom center;
+            /* Initial position should match currentAngle (e.g., 90deg) */
+            transform: translateX(-50%) rotate(90deg); 
+            transition: transform 0.3s ease-out; /* Smoother transition */
+            border-radius: 2px;
+            box-shadow: 0 0 8px var(--terminal-accent);
+        }
+
+        .servo-base {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 20px;
+            height: 10px;
+            background-color: rgba(0, 255, 65, 0.3);
+            border-radius: 3px 3px 0 0;
+            transform: translateX(-50%);
+            border-top: 1px solid var(--terminal-text);
+            border-left: 1px solid var(--terminal-text);
+            border-right: 1px solid var(--terminal-text);
+        }
+
+        .angle-marker {
+            position: absolute;
+            bottom: 5px;
+            font-size: 0.7rem;
+            color: var(--terminal-dim-text);
+        }
+
+        .angle-marker:nth-child(1) { left: 10%; } /* 0 deg */
+        .angle-marker:nth-child(2) { left: 50%; transform: translateX(-50%); } /* 90 deg */
+        .angle-marker:nth-child(3) { right: 10%; } /* 180 deg */
+
+
+        /* OCR & Conveyor Section */
+        .system-status {
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-top: 30px;
+            background-color: rgba(0, 255, 65, 0.05);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .status-item {
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .status-item h3 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+            text-transform: uppercase;
+            color: var(--terminal-accent);
+        }
+
+        .status-item .status-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--terminal-text);
+        }
+
+        .status-item .status-indicator { /* Used for individual components */
+            margin-bottom: 8px;
+        }
+
+
+        .conveyor-animation {
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: var(--border-terminal);
+            border-radius: var(--border-radius);
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .conveyor-belt {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 15px;
+            background: repeating-linear-gradient(
+                90deg,
+                var(--terminal-dim-text),
+                var(--terminal-dim-text) 20px,
+                rgba(0, 255, 65, 0.3) 20px,
+                rgba(0, 255, 65, 0.3) 40px
+            );
+            animation: moveBelt 2s linear infinite;
+        }
+
+        .conveyor-rollers {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 15px,
+                var(--terminal-dim-text) 15px,
+                var(--terminal-dim-text) 20px
+            );
+        }
+
+        .parcel {
+            position: absolute;
+            bottom: 15px; /* On top of the belt */
+            left: -50px; /* Start off-screen */
+            width: 40px;
+            height: 25px;
+            background-color: var(--terminal-accent);
+            border: 1px solid rgba(0, 255, 65, 0.5);
+            animation: moveParcel 8s linear infinite;
+            display: flex; /* For centering text if needed */
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: var(--terminal-bg);
+        }
+        .parcel::before { /* Simulate parcel content */
+            content: "ID:????";
+        }
+
+
+        .scanner {
+            position: absolute;
+            top: 0;
+            left: 70%; /* Position of the scanner beam */
+            width: 10px;
+            height: 100%;
+            background-color: rgba(255, 0, 0, 0.2); /* Red scanner beam */
+            animation: scannerEffect 2s ease-in-out infinite;
+        }
+         .scanner::after { /* Scanner light source */
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 5px;
+            height: 5px;
+            background-color: rgba(255,0,0,0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 10px red;
+        }
+
+
+        @keyframes moveBelt {
+            0% { background-position: 0 0; }
+            100% { background-position: -40px 0; } /* Moves the belt texture */
+        }
+
+        @keyframes moveParcel { /* Parcel moves across the conveyor */
+            0% { left: -50px; opacity: 0; transform: translateX(0) rotate(0deg); }
+            10% { left: calc(70% - 60px); opacity: 1; } /* Arrives before scanner */
+            20% { left: calc(70% - 20px); } /* Under scanner */
+            23% { left: calc(70% - 20px); } /* Pause under scanner */
+            /* Simulate sort based on hypothetical OCR result */
+            25% { /* Optional: Add a slight rotation if sorted */
+                /* transform: translateX(10px) rotate(15deg); */
+            }
+            70% { left: 100%; opacity: 1; /* transform: translateX(10px) rotate(15deg); */} /* Moves off screen */
+            80% { opacity: 0; }
+            100% { left: 100%; opacity: 0; transform: translateX(0) rotate(0deg); }
+        }
+
+
+        @keyframes scannerEffect { /* Pulsing scanner light */
+            0%, 100% { background-color: rgba(255, 0, 0, 0.1); }
+            50% { background-color: rgba(255, 0, 0, 0.3); }
+        }
+
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .servo-controls {
+                grid-template-columns: repeat(2, 1fr); /* 2 servos per row on smaller screens */
+            }
+            
+            .servo-buttons { /* Stack buttons in servo selection panel */
+                grid-template-columns: 1fr;
+            }
+             .servo-buttons.single-row { /* Keep angle control buttons in a row */
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .angle-controls {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        .typing-animation {
+            overflow: hidden;
+            border-right: 2px solid var(--terminal-text); /* Simulates cursor */
+            white-space: nowrap;
+            margin: 0;
+            letter-spacing: 0.1em; /* Adjust as needed */
+            animation: 
+                typing 3.5s steps(40, end), /* Adjust steps and duration */
+                blink-caret .75s step-end infinite;
+        }
+
+        /* The typing effect */
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        /* The typewriter cursor effect */
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--terminal-text); }
+        }
+
+    </style>
+</head>
+<body> <div class="noise"></div>
+    <div class="container">
+        <div class="header">
+            <h1 class="typing-animation">
+                <i class="fas fa-microchip"></i> SORT-IT<span class="blink" id="cursor">_</span>
+            </h1>
+            <a href="{{ url_for('dashboard') }}" class="back-btn">
+                <i class="fas fa-terminal"></i> SYS::/dashboard
+            </a>
+        </div>
+
+        {% if not servo_module_loaded %}
+        <div class="console-section">
+            <div class="console-header">
+                 <h2><i class="fas fa-power-off"></i> System Offline</h2>
+                 <div class="status-indicator offline" id="main-system-status-indicator"></div>
+            </div>
+            <div class="console-window" id="console-output-offline">
+                <div class="console-line error"><i class="fas fa-exclamation-triangle"></i> ERROR: Servo control module (testservo.py) or PCA9685 failed to load/initialize.</div>
+                <div classs="console-line error">Hardware communication issue suspected.</div>
+                <div class="console-line error">Please check Raspberry Pi & PCA9685 connections and server logs.</div>
+                <div class="console-line info">Attempting to reconnect or re-initialize may require a server restart.</div>
+                <div class="console-line">System status: OFFLINE</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="system-status">
+            <div class="panel-header">
+                <h2><i class="fas fa-project-diagram"></i> System Status</h2>
+                <div class="status-indicator active" id="main-system-status-indicator"></div>
+            </div>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-indicator active" id="ocr-status-indicator"></div>
+                    <h3>OCR Module</h3>
+                    <div class="status-value" id="ocr-status-value">ONLINE (Simulated)</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator active" id="conveyor-status-indicator"></div>
+                    <h3>Conveyor</h3>
+                    <div class="status-value" id="conveyor-status-value">RUNNING (Simulated)</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator active" id="servo-system-status-indicator"></div>
+                    <h3>Servo System</h3>
+                    <div class="status-value" id="servo-system-status-value">READY</div>
+                </div>
+            </div>
+            <div class="conveyor-animation">
+                <div class="conveyor-belt"></div>
+                <div class="conveyor-rollers"></div>
+                <div class="parcel" id="animated-parcel">ID:SCAN</div>
+                <div class="scanner"></div>
+            </div>
+        </div>
+
+        <div class="control-grid">
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-microchip"></i> Servo Selection</h2>
+                    <div class="status-indicator active" id="servo-select-status"></div>
+                </div>
+                <div class="servo-controls">
+                    {% for i in range(6) %}
+                    <div class="servo-box {% if i == 0 %}active{% endif %}" data-servo="{{ i }}">
+                        <h3>SERVO</h3>
+                        <div class="servo-number">{{ i }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="servo-buttons">
+                    <button class="btn btn-primary" id="activateServoBtn" onclick="activateServo()">
+                        <i class="fas fa-power-off"></i> Activate
+                    </button>
+                    <button class="btn" id="calibrateServoBtn" onclick="calibrateServo()">
+                        <i class="fas fa-crosshairs"></i> Calibrate
+                    </button>
+                    <button class="btn btn-accent" id="resetServoBtn" onclick="resetServo()">
+                        <i class="fas fa-undo"></i> Reset (90°)
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-sliders-h"></i> Servo Control</h2>
+                    <div class="status-indicator active" id="servo-control-status"></div>
+                </div>
+                <div class="servo-visualizer">
+                    <div class="servo-base"></div>
+                    <div class="servo-arm" id="servo-arm"></div>
+                    <div class="angle-marker">0°</div>
+                    <div class="angle-marker">90°</div>
+                    <div class="angle-marker">180°</div>
+                </div>
+                <div class="angle-controls">
+                    <button id="angleAdjustMinus10" onclick="adjustAngle(-10)"><i class="fas fa-angle-double-left"></i></button>
+                    <button id="angleAdjustMinus1" onclick="adjustAngle(-1)"><i class="fas fa-angle-left"></i></button>
+                    <div class="angle-display" id="angle-display">90°</div>
+                    <button id="angleAdjustPlus1" onclick="adjustAngle(1)"><i class="fas fa-angle-right"></i></button>
+                    <button id="angleAdjustPlus10" onclick="adjustAngle(10)"><i class="fas fa-angle-double-right"></i></button>
+                </div>
+                <div class="servo-buttons single-row">
+                    <button class="btn" id="setAngle0Btn" onclick="setPresetAngle(0)">0°</button>
+                    <button class="btn" id="setAngle90Btn" onclick="setPresetAngle(90)">90°</button>
+                    <button class="btn" id="setAngle180Btn" onclick="setPresetAngle(180)">180°</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-sequences">
+            <div class="test-card">
+                <div class="test-card-header">
+                    <i class="fas fa-vial"></i>
+                    <h3>Sweep Test</h3>
+                </div>
+                <p>Run a 0-180-0 sweep for the selected servo. (Basic hardware test)</p>
+                <button class="btn btn-primary" id="runSweepTestBtn" onclick="runSweepTest()">
+                    <i class="fas fa-play"></i> Run Basic Sweep
+                </button>
+                 <button class="btn" style="margin-top: 10px;" id="runSmoothSweepTestBtn" onclick="runSmoothSweepTest()">
+                    <i class="fas fa-wave-square"></i> Run Smooth Sweep
+                </button>
+            </div>
+            <div class="test-card">
+                <div class="test-card-header">
+                    <i class="fas fa-random"></i>
+                    <h3>Random Position</h3>
+                </div>
+                <p>Move servo to 5 random positions to test responsiveness.</p>
+                <button class="btn btn-primary" id="runRandomTestBtn" onclick="runRandomTest()">
+                    <i class="fas fa-dice"></i> Random Test
+                </button>
+            </div>
+            <div class="test-card">
+                <div class="test-card-header">
+                    <i class="fas fa-sort-amount-up"></i>
+                    <h3>OCR Sort Simulation</h3>
+                </div>
+                <p>Simulate a sorting operation based on (mock) OCR detection.</p>
+                <button class="btn btn-accent" id="runOCRSortTestBtn" onclick="runOCRSortTest()">
+                    <i class="fas fa-barcode"></i> Run Simulation
+                </button>
+            </div>
+        </div>
+
+        <div class="console-section">
+            <div class="console-header">
+                <h2><i class="fas fa-terminal"></i> System Console</h2>
+                <button class="console-button" onclick="clearConsole()">Clear</button>
+            </div>
+            <div class="console-window" id="console-output">
+                </div>
+        </div>
+        {% endif %}
+    </div>
+
+<script>
+    // Global state
+    let currentAngle = 90;
+    let currentServo = 0; // Default to servo 0
+    let isTestRunning = false;
+    const servoModuleLoaded = {{ servo_module_loaded | tojson }}; // Get status from Flask
+
+    // DOM elements
+    const servoArm = document.getElementById('servo-arm');
+    const angleDisplay = document.getElementById('angle-display');
+    const consoleOutput = document.getElementById('console-output') || document.getElementById('console-output-offline'); // Handle both cases
+    const animatedParcel = document.getElementById('animated-parcel');
+
+    // All control buttons that should be disabled if module not loaded or test running
+    const controlButtons = [
+        'activateServoBtn', 'calibrateServoBtn', 'resetServoBtn',
+        'angleAdjustMinus10', 'angleAdjustMinus1', 'angleAdjustPlus1', 'angleAdjustPlus10',
+        'setAngle0Btn', 'setAngle90Btn', 'setAngle180Btn',
+        'runSweepTestBtn', 'runSmoothSweepTestBtn', 'runRandomTestBtn', 'runOCRSortTestBtn'
+    ];
+
+    // --- Initialization and UI Updates ---
+    document.addEventListener('DOMContentLoaded', () => {
+        if (servoModuleLoaded) {
+            logToConsole('System Initialized. Servo control module active.', 'success');
+            logToConsole(`Selected Servo: ${currentServo}. Current Angle: ${currentAngle}°`, 'info');
+            updateServoVisuals(); // Set initial visual state
+            checkOverallSystemStatus(); // Check and log initial status
+        } else {
+            logToConsole('CRITICAL: Servo control module FAILED to load. Hardware functions disabled.', 'error');
+            logToConsole('Check server logs and Raspberry Pi/PCA9685 connections.', 'error');
+            disableAllControls();
+            updateStatusIndicator('main-system-status-indicator', false);
+        }
+
+        // Servo selection listeners
+        document.querySelectorAll('.servo-box').forEach(box => {
+            box.addEventListener('click', function() {
+                if (isTestRunning || !servoModuleLoaded) return; // Don't change servo if test running or module dead
+                document.querySelectorAll('.servo-box').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentServo = parseInt(this.getAttribute('data-servo'));
+                logToConsole(`Selected servo ${currentServo}`, 'info');
+                // Optional: Fetch current angle of the new servo if your backend supports it
+                // For now, we assume it starts at the globally tracked currentAngle or 90
+            });
+        });
+    });
+
+    function disableAllControls(disable = true) {
+        controlButtons.forEach(btnId => {
+            const button = document.getElementById(btnId);
+            if (button) {
+                button.disabled = disable;
+            }
+        });
+        // Also disable servo selection boxes
+        document.querySelectorAll('.servo-box').forEach(box => {
+            if (disable) box.style.pointerEvents = 'none';
+            else box.style.pointerEvents = 'auto';
+        });
+    }
+
+    function updateStatusIndicator(elementId, isActive) {
+        const indicator = document.getElementById(elementId);
+        if (indicator) {
+            if (isActive) {
+                indicator.classList.remove('offline', 'warning');
+                indicator.classList.add('active');
+            } else {
+                indicator.classList.remove('active', 'warning');
+                indicator.classList.add('offline');
+            }
+        }
+    }
+
+    function updateServoVisuals() {
+        if (!servoModuleLoaded) return;
+        if (servoArm) servoArm.style.transform = `translateX(-50%) rotate(${currentAngle}deg)`;
+        if (angleDisplay) angleDisplay.textContent = `${currentAngle}°`;
+    }
+
+    // --- Logging ---
+    function logToConsole(message, type = 'info') { // Default type to 'info'
+        if (!consoleOutput) return;
+        const lineElement = document.createElement('div');
+        lineElement.className = `console-line ${type}`; // e.g., 'console-line error'
+        
+        // Add appropriate icon based on type
+        let iconHtml = '';
+        if (type === 'success') iconHtml = '<i class="fas fa-check-circle" style="margin-right: 5px;"></i>';
+        else if (type === 'error') iconHtml = '<i class="fas fa-times-circle" style="margin-right: 5px;"></i>';
+        else if (type === 'warning') iconHtml = '<i class="fas fa-exclamation-triangle" style="margin-right: 5px;"></i>';
+        else if (type === 'info') iconHtml = '<i class="fas fa-info-circle" style="margin-right: 5px;"></i>';
+
+        lineElement.innerHTML = iconHtml + message; // Use innerHTML to render the icon
+
+        consoleOutput.appendChild(lineElement);
+        consoleOutput.scrollTop = consoleOutput.scrollHeight; // Auto-scroll
+    }
+
+    function clearConsole() {
+        if (consoleOutput) consoleOutput.innerHTML = '';
+        logToConsole('Console cleared by user.');
+    }
+
+    // --- API Interaction ---
+    async function sendCommand(endpoint, data = {}, commandName = "Command") {
+        if (!servoModuleLoaded) {
+            logToConsole(`Cannot execute ${commandName}: Servo module not loaded.`, 'error');
+            return null;
+        }
+        if (isTestRunning && commandName !== "OCR Sort Simulation" && commandName !== "Random Test" && commandName !== "Sweep Test") { 
+            // Allow test functions to run, but not manual angle adjustments during a test
+            logToConsole(`Cannot execute ${commandName}: A test is currently running.`, 'warning');
+            return null;
+        }
+
+        logToConsole(`Sending ${commandName} to servo ${data.channel !== undefined ? data.channel : currentServo}... Data: ${JSON.stringify(data)}`, 'info');
+        disableAllControls(true); // Disable controls during API call
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                logToConsole(`${commandName} successful: ${result.message}`, 'success');
+                if (result.details && Array.isArray(result.details)) {
+                    result.details.forEach(detail => logToConsole(`> ${detail}`, 'info'));
+                }
+                return result;
+            } else {
+                logToConsole(`${commandName} failed: ${result.message || response.statusText}`, 'error');
+                updateStatusIndicator('main-system-status-indicator', false); // Indicate potential issue
+                return null;
+            }
+        } catch (error) {
+            logToConsole(`Network or server error during ${commandName}: ${error.message}`, 'error');
+            updateStatusIndicator('main-system-status-indicator', false);
+            return null;
+        } finally {
+            if (!isTestRunning) { // Re-enable controls if no major test is active
+                 disableAllControls(false);
+            }
+        }
+    }
+
+    // --- Servo Control Functions ---
+    function adjustAngle(delta) {
+        if (isTestRunning) return;
+        currentAngle = Math.max(0, Math.min(180, currentAngle + delta));
+        updateServoVisuals();
+        sendCommand('/api/servo/set_angle', { channel: currentServo, angle: currentAngle }, 'Set Angle');
+    }
+
+    function setPresetAngle(angle) {
+        if (isTestRunning) return;
+        currentAngle = angle;
+        updateServoVisuals();
+        sendCommand('/api/servo/set_angle', { channel: currentServo, angle: currentAngle }, 'Set Preset Angle');
+    }
+    
+    async function activateServo() {
+        // This now primarily checks system readiness via an API call
+        const result = await sendCommand('/api/servo/activate', { channel: currentServo }, 'Activate Servo');
+        if (result) {
+            updateStatusIndicator('servo-select-status', true);
+        }
+    }
+
+    async function calibrateServo() {
+        if (isTestRunning) return;
+        isTestRunning = true;
+        disableAllControls(true);
+        logToConsole(`Starting calibration (basic sweep) for servo ${currentServo}...`, 'info');
+        const result = await sendCommand('/api/servo/calibrate', { channel: currentServo }, 'Calibrate Servo');
+        if (result) {
+            // The sweep itself moves the servo, so we just log completion.
+            // The visual servo arm will not update step-by-step here as it's server-side.
+            // We can set it to 90 after the sweep.
+            currentAngle = 90; 
+            updateServoVisuals();
+        }
+        isTestRunning = false;
+        disableAllControls(false);
+    }
+
+    async function resetServo() {
+        if (isTestRunning) return;
+        logToConsole(`Resetting servo ${currentServo} to 90°...`, 'info');
+        const result = await sendCommand('/api/servo/reset', { channel: currentServo }, 'Reset Servo');
+        if (result) {
+            currentAngle = 90;
+            updateServoVisuals();
+        }
+    }
+
+    // --- Test Sequence Functions ---
+    async function runSweepTest() {
+        if (isTestRunning) return;
+        isTestRunning = true;
+        disableAllControls(true);
+        logToConsole(`Starting BASIC SWEEP test for servo ${currentServo}...`, 'info');
+        const result = await sendCommand('/api/servo/sweep_basic', { channel: currentServo }, 'Sweep Test');
+        if (result) {
+            // After sweep, server should ideally return it to 90.
+            // We'll update visual to 90.
+            currentAngle = 90;
+            updateServoVisuals();
+        }
+        isTestRunning = false;
+        disableAllControls(false);
+    }
+    
+    async function runSmoothSweepTest() {
+        if (isTestRunning) return;
+        isTestRunning = true;
+        disableAllControls(true);
+        logToConsole(`Starting SMOOTH SWEEP test for servo ${currentServo}...`, 'info');
+        const result = await sendCommand('/api/servo/sweep_smooth', { channel: currentServo }, 'Smooth Sweep Test');
+        if (result) {
+            currentAngle = 90; // Assume it ends at 90
+            updateServoVisuals();
+        }
+        isTestRunning = false;
+        disableAllControls(false);
+    }
+
+
+    async function runRandomTest() {
+        if (isTestRunning) return;
+        isTestRunning = true;
+        disableAllControls(true);
+        logToConsole(`Starting RANDOM POSITION test for servo ${currentServo}...`, 'info');
+        const result = await sendCommand('/api/servo/random_test', { channel: currentServo, positions: 5 }, 'Random Test');
+        // The server-side random test will move the servo. The visual arm won't track each random move.
+        // It will end at 90 degrees as per the Flask route.
+        if (result) {
+            currentAngle = 90; 
+            updateServoVisuals();
+        }
+        isTestRunning = false;
+        disableAllControls(false);
+    }
+
+    async function runOCRSortTest() {
+        if (isTestRunning) return;
+        isTestRunning = true;
+        disableAllControls(true);
+        logToConsole(`Initiating OCR SORTING SIMULATION for servo ${currentServo}...`, 'info');
+        if(animatedParcel) animatedParcel.style.animationPlayState = 'running'; // Restart parcel animation
+
+        const result = await sendCommand('/api/servo/ocr_sort_test', { channel: currentServo }, 'OCR Sort Simulation');
+        // The server handles the sequence. Visual arm won't track intermediate OCR sort moves.
+        // It will end at 90 degrees.
+        if (result) {
+            currentAngle = 90;
+            updateServoVisuals();
+             if(animatedParcel) { // Update parcel text based on simulation
+                setTimeout(() => animatedParcel.textContent = "ID:A-****", 2000);
+                setTimeout(() => animatedParcel.textContent = "ID:B-****", 5000);
+                setTimeout(() => animatedParcel.textContent = "ID:SCAN", 8000);
+            }
+        }
+        isTestRunning = false;
+        disableAllControls(false);
+         if(animatedParcel) setTimeout(() => animatedParcel.style.animationPlayState = 'paused', 8100); // Pause after cycle
+    }
+
+    // Check overall system status from server
+    async function checkOverallSystemStatus() {
+        if (!servoModuleLoaded) { // Already handled by initial check
+            updateStatusIndicator('main-system-status-indicator', false);
+            return;
+        }
+        try {
+            const response = await fetch('/api/servo/status');
+            const result = await response.json();
+            if (response.ok && result.status === 'success' && result.servo_kit_available) {
+                logToConsole('System Status Check: Servo Kit Online.', 'success');
+                updateStatusIndicator('main-system-status-indicator', true);
+                updateStatusIndicator('servo-system-status-indicator', true);
+                document.getElementById('servo-system-status-value').textContent = 'ONLINE';
+            } else {
+                logToConsole(`System Status Check Failed: ${result.message || 'Unknown error'}`, 'error');
+                updateStatusIndicator('main-system-status-indicator', false);
+                updateStatusIndicator('servo-system-status-indicator', false);
+                document.getElementById('servo-system-status-value').textContent = 'OFFLINE';
+                disableAllControls(true);
+            }
+        } catch (error) {
+            logToConsole(`System Status Check Network Error: ${error.message}`, 'error');
+            updateStatusIndicator('main-system-status-indicator', false);
+            updateStatusIndicator('servo-system-status-indicator', false);
+            document.getElementById('servo-system-status-value').textContent = 'ERROR';
+            disableAllControls(true);
+        }
+    }
+
+</script>
+</body>
+</html>

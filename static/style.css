@@ -1,0 +1,359 @@
+
+/* style.css */
+:root {
+    --primary: #0cff0c;
+    --secondary: #00b800;
+    --background: #000;
+    --text: #c0c0c0;
+    --accent: #0077ff;
+    --error: #ff3333;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Courier New', monospace;
+}
+
+body {
+    background-color: var(--background);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    position: relative;
+}
+
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.03) 50%,
+        rgba(0, 0, 0, 0.1) 50%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.noise {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.05;
+    z-index: 10;
+    pointer-events: none;
+    animation: noise 0.2s infinite;
+}
+
+@keyframes noise {
+    0% { background-position: 0 0; }
+    100% { background-position: 100% 100%; }
+}
+
+.container {
+    width: 90%;
+    max-width: 600px;
+    z-index: 5;
+}
+
+.terminal-header {
+    border: 1px solid var(--primary);
+    border-bottom: none;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminal-window {
+    border: 1px solid var(--primary);
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(12, 255, 12, 0.3);
+    position: relative;
+}
+
+.terminal-title {
+    color: var(--primary);
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    text-align: center;
+    text-shadow: 0 0 5px var(--primary);
+    letter-spacing: 2px;
+}
+
+.terminal-subtitle {
+    color: var(--text);
+    margin-bottom: 25px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-prefix {
+    position: absolute;
+    left: 10px;
+    top: 12px;
+    color: var(--primary);
+}
+
+.login-form input {
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--text);
+    color: var(--primary);
+    padding: 12px 12px 12px 30px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.login-form input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 5px var(--primary);
+}
+
+.login-form input::placeholder {
+    color: rgba(192, 192, 192, 0.5);
+}
+
+.login-button {
+    background-color: transparent;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-button:hover {
+    background-color: rgba(12, 255, 12, 0.1);
+}
+
+.login-button:active {
+    transform: scale(0.98);
+}
+
+/* OCR Scanner animation */
+.scanner {
+    width: 100%;
+    height: 4px;
+    background-color: var(--accent);
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-shadow: 0 0 10px 2px var(--accent);
+    opacity: 0;
+    animation: scan 3s infinite;
+}
+
+@keyframes scan {
+    0% {
+        top: 0;
+        opacity: 0;
+    }
+    5% {
+        opacity: 0.8;
+    }
+    45% {
+        top: 100%;
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        top: 0;
+        opacity: 0;
+    }
+}
+
+/* Conveyor belt animation */
+.conveyor {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    overflow: hidden;
+    background-color: #222;
+    z-index: 1;
+}
+
+.conveyor-belt {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 20px;
+    width: 200%;
+    background: repeating-linear-gradient(
+        90deg,
+        #333 0px,
+        #333 30px,
+        #444 30px,
+        #444 60px
+    );
+    animation: convey 10s linear infinite;
+}
+
+@keyframes convey {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* Package animation */
+.package {
+    position: absolute;
+    bottom: 20px;
+    width: 30px;
+    height: 20px;
+    background-color: #955;
+    border: 1px solid #333;
+    animation: package 15s linear infinite;
+    z-index: 2;
+}
+
+.package:nth-child(2) {
+    animation-delay: 5s;
+    width: 40px;
+}
+
+.package:nth-child(3) {
+    animation-delay: 10s;
+    width: 25px;
+}
+
+@keyframes package {
+    0% {
+        left: -50px;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Terminal text effect */
+.terminal-text {
+    overflow: hidden;
+    white-space: nowrap;
+    margin: 0;
+    color: var(--primary);
+    font-size: 0.9rem;
+    animation: typing 3s steps(40, end);
+    max-width: 100%;
+}
+
+@keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+}
+
+/* Blinking cursor */
+.cursor {
+    display: inline-block;
+    width: 10px;
+    height: 16px;
+    background-color: var(--primary);
+    animation: blink 1s infinite;
+    margin-left: 5px;
+}
+
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+
+/* Status icons */
+.status-icons {
+    display: flex;
+    gap: 10px;
+}
+
+.status-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.status-icon.red {
+    background-color: #ff5f56;
+}
+
+.status-icon.yellow {
+    background-color: #ffbd2e;
+}
+
+.status-icon.green {
+    background-color: #27c93f;
+}
+
+/* System messages */
+.system-message {
+    margin-top: 20px;
+    font-size: 0.8rem;
+    color: var(--text);
+}
+
+.system-message p {
+    margin-bottom: 5px;
+}
+
+.system-log {
+    height: 80px;
+    overflow-y: scroll;
+    margin-top: 20px;
+    border: 1px solid var(--text);
+    padding: 10px;
+    font-size: 0.8rem;
+    color: var(--secondary);
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.system-log p {
+    margin: 3px 0;
+}
+
+.highlight {
+    color: var(--accent);
+}
+
+.error {
+    color: var(--error);
+}
+
+/* Background matrix effect */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}

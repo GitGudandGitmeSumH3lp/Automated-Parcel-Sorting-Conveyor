@@ -1,0 +1,29 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+.env
+
+# Node.js / Frontend
+node_modules/
+build/
+dist/
+.npm
+
+# Runtime Generated Files
+logs/
+uploads/
+debug_images/
+simulation/
+images/
+labels/
+temp_barcodes/
+*.log
+
+# Editor/OS Files
+.swp
+.swo
+.DS_Store
+
+# OLD CODE (we will delete this folder)
+OLDCODE/

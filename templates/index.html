@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APS Terminal Login</title>
+    <style>
+        :root {
+            --primary: #0cff0c;
+            --secondary: #00b800;
+            --background: #000;
+            --text: #c0c0c0;
+            --accent: #0077ff;
+            --error: #ff3333;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.03) 50%,
+                rgba(0, 0, 0, 0.1) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 15;
+        }
+        
+        .noise {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.05;
+            z-index: 10;
+            pointer-events: none;
+            animation: noise 0.2s infinite;
+        }
+        
+        @keyframes noise {
+            0% { background-position: 0 0; }
+            100% { background-position: 100% 100%; }
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 600px;
+            z-index: 5;
+        }
+        
+        .terminal-header {
+            border: 1px solid var(--primary);
+            border-bottom: none;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .terminal-window {
+            border: 1px solid var(--primary);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(12, 255, 12, 0.3);
+            position: relative;
+        }
+        
+        .terminal-title {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            text-align: center;
+            text-shadow: 0 0 5px var(--primary);
+            letter-spacing: 2px;
+        }
+        
+        .terminal-subtitle {
+            color: var(--text);
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1rem;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .input-group {
+            position: relative;
+        }
+        
+        .input-prefix {
+            position: absolute;
+            left: 10px;
+            top: 12px;
+            color: var(--primary);
+        }
+        
+        .login-form input {
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--text);
+            color: var(--primary);
+            padding: 12px 12px 12px 30px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        
+        .login-form input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 5px var(--primary);
+        }
+        
+        .login-form input::placeholder {
+            color: rgba(192, 192, 192, 0.5);
+        }
+        
+        .login-button {
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-button:hover {
+            background-color: rgba(12, 255, 12, 0.1);
+        }
+        
+        .login-button:active {
+            transform: scale(0.98);
+        }
+        
+        /* OCR Scanner animation */
+        .scanner {
+            width: 100%;
+            height: 4px;
+            background-color: var(--accent);
+            position: absolute;
+            left: 0;
+            top: 0;
+            box-shadow: 0 0 10px 2px var(--accent);
+            opacity: 0;
+            animation: scan 3s infinite;
+        }
+        
+        @keyframes scan {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.8;
+            }
+            45% {
+                top: 100%;
+                opacity: 0.8;
+            }
+            50% {
+                opacity: 0;
+            }
+            100% {
+                top: 0;
+                opacity: 0;
+            }
+        }
+        
+        /* Conveyor belt animation */
+        .conveyor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            overflow: hidden;
+            background-color: #222;
+            z-index: 1;
+        }
+        
+        .conveyor-belt {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 20px;
+            width: 200%;
+            background: repeating-linear-gradient(
+                90deg,
+                #333 0px,
+                #333 30px,
+                #444 30px,
+                #444 60px
+            );
+            animation: convey 10s linear infinite;
+        }
+        
+        @keyframes convey {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+        
+        /* Package animation */
+        .package {
+            position: absolute;
+            bottom: 20px;
+            width: 30px;
+            height: 20px;
+            background-color: #955;
+            border: 1px solid #333;
+            animation: package 15s linear infinite;
+            z-index: 2;
+        }
+        
+        .package:nth-child(2) {
+            animation-delay: 5s;
+            width: 40px;
+        }
+        
+        .package:nth-child(3) {
+            animation-delay: 10s;
+            width: 25px;
+        }
+        
+        @keyframes package {
+            0% {
+                left: -50px;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Terminal text effect */
+        .terminal-text {
+            overflow: hidden;
+            white-space: nowrap;
+            margin: 0;
+            color: var(--primary);
+            font-size: 0.9rem;
+            animation: typing 3s steps(40, end);
+            max-width: 100%;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        /* Blinking cursor */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 16px;
+            background-color: var(--primary);
+            animation: blink 1s infinite;
+            margin-left: 5px;
+        }
+        
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        
+        /* Status icons */
+        .status-icons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .status-icon.red {
+            background-color: #ff5f56;
+        }
+        
+        .status-icon.yellow {
+            background-color: #ffbd2e;
+        }
+        
+        .status-icon.green {
+            background-color: #27c93f;
+        }
+        
+        /* System messages */
+        .system-message {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--text);
+        }
+        
+        .system-message p {
+            margin-bottom: 5px;
+        }
+        
+        .system-log {
+            height: 80px;
+            overflow-y: scroll;
+            margin-top: 20px;
+            border: 1px solid var(--text);
+            padding: 10px;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .system-log p {
+            margin: 3px 0;
+        }
+        
+        .highlight {
+            color: var(--accent);
+        }
+        
+        .error {
+            color: var(--error);
+        }
+        
+        /* Background matrix effect */
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix"></canvas>
+    <div class="scanlines"></div>
+    <div class="noise"></div>
+
+        <div class="container">
+            <div class="terminal-header">
+                <div class="status-icons">
+                    <div class="status-icon red"></div>
+                    <div class="status-icon yellow"></div>
+                    <div class="status-icon green"></div>
+                </div>
+                <div class="terminal-id">APS-TERMINAL://#root</div>
+            </div>
+            <div class="terminal-window">
+                <div class="scanner"></div>
+                <h1 class="terminal-title">AUTOMATED PARCEL SYSTEM</h1>
+                <p class="terminal-subtitle">SECURE ACCESS TERMINAL v2.5.7</p>
+                <p class="terminal-text">Initializing user authentication protocols...</p>
+                <div class="cursor"></div>
+                <form class="login-form" method="POST" action="/login">
+                    <div class="input-group">
+                        <span class="input-prefix">></span>
+                        <input type="text" name="username" placeholder="USERNAME" required>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-prefix">></span>
+                        <input type="password" name="password" placeholder="PASSWORD" required>
+                    </div>
+                    <input type="hidden" name="from_terminal" value="true">
+                    <button type="submit" class="login-button" id="loginBtn">AUTHENTICATE</button>
+                </form>
+                <div class="system-log">
+                    <p>[<span class="highlight">SYSTEM</span>] Initializing OCR subsystems...</p>
+                    <p>[<span class="highlight">SYSTEM</span>] Conveyor belt mechanisms online.</p>
+                    <p>[<span class="highlight">SYSTEM</span>] Package tracking database connected.</p>
+                    <p>[<span class="highlight">SYSTEM</span>] Waiting for authentication...</p>
+                </div>
+                <div class="system-message">
+                    <p>NOTE: Authorized personnel only.
+                        Unauthorized access attempts will be logged.</p>
+                </div>
+            </div>
+        </div>
+    
+    <div class="conveyor">
+        <div class="conveyor-belt"></div>
+        <div class="package"></div>
+        <div class="package"></div>
+        <div class="package"></div>
+    </div>
+    
+    <script>
+        // Matrix rain effect
+        const canvas = document.getElementById('matrix');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%^&*()_+-=[]{}|;:,.<>?';
+        const font_size = 12;
+        const columns = canvas.width / font_size;
+        
+        const drops = [];
+        
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+        
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#0F0';
+            ctx.font = font_size + 'px monospace';
+            
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillText(text, i * font_size, drops[i] * font_size);
+                
+                if (drops[i] * font_size > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                
+                drops[i]++;
+            }
+        }
+        
+        setInterval(drawMatrix, 33);
+        
+        // Login button effect
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            const systemLog = document.querySelector('.system-log');
+            systemLog.innerHTML += '<p>[<span class="highlight">SYSTEM</span>] Authenticating user credentials...</p>';
+            
+            setTimeout(() => {
+                const inputs = document.querySelectorAll('input');
+                const username = inputs[0].value;
+                const password = inputs[1].value;
+                
+                if (username && password) {
+                    systemLog.innerHTML += '<p>[<span class="highlight">SYSTEM</span>] Authentication successful. Welcome, ' + username + '.</p>';
+                    systemLog.innerHTML += '<p>[<span class="highlight">SYSTEM</span>] Redirecting to Automated Parcel System console...</p>';
+                } else {
+                    systemLog.innerHTML += '<p>[<span class="error">ERROR</span>] Authentication failed. Invalid credentials.</p>';
+                }
+                
+                systemLog.scrollTop = systemLog.scrollHeight;
+            }, 1500);
+        });
+        
+        // Auto-update terminal noise
+        function updateNoise() {
+            const noise = document.querySelector('.noise');
+            noise.style.backgroundImage = `url('data:image/png;base64,${generateNoiseBase64()}')`;
+        }
+        
+        function generateNoiseBase64() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 100;
+            canvas.height = 100;
+            const ctx = canvas.getContext('2d');
+            
+            const imageData = ctx.createImageData(100, 100);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const value = Math.floor(Math.random() * 255);
+                data[i] = value;
+                data[i + 1] = value;
+                data[i + 2] = value;
+                data[i + 3] = Math.random() * 50;
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+            return canvas.toDataURL().split(',')[1];
+        }
+        
+        setInterval(updateNoise, 200);
+        
+        // Add dynamic terminal messages
+        const systemMessages = [
+            "Package ID: APS-27491 processed by OCR.",
+            "Conveyor section C3 maintenance scheduled.",
+            "Database backup completed successfully.",
+            "OCR accuracy rate: 99.7% in last 24 hours.",
+            "System resource utilization: 42%",
+            "Network connectivity: OPTIMAL"
+        ];
+        
+        function addRandomSystemMessage() {
+            const systemLog = document.querySelector('.system-log');
+            const randomMessage = systemMessages[Math.floor(Math.random() * systemMessages.length)];
+            
+            if (Math.random() > 0.5) {
+                systemLog.innerHTML += `<p>[<span class="highlight">INFO</span>] ${randomMessage}</p>`;
+                systemLog.scrollTop = systemLog.scrollHeight;
+            }
+        }
+        
+        setInterval(addRandomSystemMessage, 8000);
+        
+        // Resize canvas on window resize
+        window.addEventListener('resize', function() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
