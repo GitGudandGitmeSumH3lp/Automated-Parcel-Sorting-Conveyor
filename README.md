@@ -51,7 +51,7 @@ The hardware is integrated into a cohesive system controlled by a Raspberry Pi. 
 
 ## 👥 The Project Team
 
-This project was a collaborative effort by the following Computer Engineering students at Bestlink College of the Philippines. My role was to lead the team and spearhead the software development.
+This project was a collaborative effort by the following Computer Engineering students at Bestlink College of the Philippines.
 
 *   Anave, Feliza C.
 *   Delgado, Christian C.
