@@ -8,7 +8,7 @@ A Raspberry Pi-powered system with a full-featured web dashboard for monitoring 
 
 To provide a user-friendly way to manage the sorter, I developed a complete web interface using Flask. This dashboard serves as the central hub for real-time monitoring, hardware diagnostics, and system testing.
 
-| Dashboard Main Page | Real-Time Camera Stream |
+| Dashboard Main Page | Camera Finder |
 | :---: | :---: |
 | ![Main Dashboard](/assets/documentation/dashboard.png) | ![Cam Finder](/assets/documentation/camfinder.png) |
 | ![Main Dashboard](/assets/documentation/dashboard1.png) |
